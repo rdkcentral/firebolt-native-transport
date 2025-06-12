@@ -24,72 +24,68 @@
 #include <stdint.h>
 #include <string>
 
-namespace FireboltSDK
-{
+namespace FireboltSDK {
 
-class FIREBOLTSDK_EXPORT Logger
-{
-private:
-    static constexpr uint16_t MaxBufSize = 512;
+    class FIREBOLTSDK_EXPORT Logger {
+    private:
+        static constexpr uint16_t MaxBufSize = 512;
 
-public:
-    enum class LogLevel : uint8_t
-    {
-        Error,
-        Warning,
-        Info,
-        Debug,
-        MaxLevel
+    public:
+        enum class LogLevel : uint8_t {
+            Error,
+            Warning,
+            Info,
+            Debug,
+            MaxLevel
+        };
+
+        enum class Category : uint8_t {
+            OpenRPC,
+            Core,
+            Manage,
+            Discovery,
+            PlayerProvider,
+            PlayerManager,
+        };
+
+    public:
+        Logger() = default;
+        Logger(const Logger&) = delete;
+        Logger& operator=(const Logger&) = delete;
+        ~Logger() = default;
+
+    public:
+        static Firebolt::Error SetLogLevel(LogLevel logLevel);
+        static void Log(LogLevel logLevel, Category category, const std::string& module, const std::string file, const std::string function, const uint16_t line, const std::string& format, ...);
+
+    public:
+        template<typename CLASS>
+        static const string Module()
+        {
+            return WPEFramework::Core::ClassNameOnly(typeid(CLASS).name()).Text(); 
+        }
+
+    private:
+        static LogLevel _logLevel;
     };
+}
 
-    enum class Category : uint8_t
-    {
-        OpenRPC,
-        Core,
-        Manage,
-        Discovery,
-        PlayerProvider,
-        PlayerManager,
-    };
-
-public:
-    Logger() = default;
-    Logger(const Logger&) = delete;
-    Logger& operator=(const Logger&) = delete;
-    ~Logger() = default;
-
-public:
-    static Firebolt::Error SetLogLevel(LogLevel logLevel);
-    static void Log(LogLevel logLevel, Category category, const std::string& module, const std::string file,
-                    const std::string function, const uint16_t line, const std::string& format, ...);
-
-public:
-    template <typename CLASS> static const std::string Module()
-    {
-        return WPEFramework::Core::ClassNameOnly(typeid(CLASS).name()).Text();
-    }
-
-private:
-    static LogLevel _logLevel;
-};
-} // namespace FireboltSDK
-
-#define FIREBOLT_LOG(level, category, module, ...)                                                                     \
+#define FIREBOLT_LOG(level, category, module, ...) \
     FireboltSDK::Logger::Log(level, category, module, __FILE__, __func__, __LINE__, __VA_ARGS__)
 
-#define FIREBOLT_LOG_ERROR(category, module, ...)                                                                      \
+#define FIREBOLT_LOG_ERROR(category, module, ...) \
     FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Error, category, module, __VA_ARGS__)
-#define FIREBOLT_LOG_WARNING(category, module, ...)                                                                    \
+#define FIREBOLT_LOG_WARNING(category, module, ...) \
     FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Warning, category, module, __VA_ARGS__)
-#define FIREBOLT_LOG_INFO(category, module, ...)                                                                       \
+#define FIREBOLT_LOG_INFO(category, module, ...) \
     FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Info, category, module, __VA_ARGS__)
-#define FIREBOLT_LOG_DEBUG(category, module, ...)                                                                      \
+#define FIREBOLT_LOG_DEBUG(category, module, ...) \
     FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Debug, category, module, __VA_ARGS__)
 
 #ifdef ENABLE_SYSLOG
-#define LOG_MESSAGE(message) syslog(sLOG_NOTIC, "%s", message);
+#define LOG_MESSAGE(message) \
+    syslog(sLOG_NOTIC, "%s", message);
 #else
-#define LOG_MESSAGE(message)                                                                                           \
-    fprintf(stderr, "%s", message);                                                                                    \
-    fflush(stdout);
+#define LOG_MESSAGE(message) \
+    fprintf(stderr, "%s", message); fflush(stdout);
 #endif

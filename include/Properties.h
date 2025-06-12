@@ -22,157 +22,128 @@
 #include "Accessor.h"
 #include "Event.h"
 
-namespace FireboltSDK
-{
+namespace FireboltSDK {
 
-class Properties
-{
-public:
-    Properties(const Properties&) = delete;
-    Properties& operator=(const Properties&) = delete;
+    class FIREBOLTSDK_EXPORT Properties {
+    public:
+        Properties(const Properties&) = delete;
+        Properties& operator= (const Properties&) = delete;
 
-    Properties() = default;
-    ~Properties() = default;
+        Properties() = default;
+        ~Properties() = default;
 
-public:
-    template <typename RESPONSETYPE>
-    static Firebolt::Error Get(const string& propertyName, WPEFramework::Core::ProxyType<RESPONSETYPE>& response)
-    {
-        Firebolt::Error status = Firebolt::Error::General;
-        Transport<WPEFramework::Core::JSON::IElement>* transport = Accessor::Instance().GetTransport();
-        if (transport != nullptr)
+    public:
+        template <typename RESPONSETYPE>
+        static Firebolt::Error Get(const string& propertyName, WPEFramework::Core::ProxyType<RESPONSETYPE>& response)
         {
-            JsonObject parameters;
-            RESPONSETYPE responseType;
-            status = transport->Invoke(propertyName, parameters, responseType);
-            if (status == Firebolt::Error::None)
-            {
-                ASSERT(response.IsValid() == false);
-                if (response.IsValid() == true)
-                {
-                    response.Release();
+            Firebolt::Error status = Firebolt::Error::General;
+            Transport<WPEFramework::Core::JSON::IElement>* transport = Accessor::Instance().GetTransport();
+            if (transport != nullptr) {
+                JsonObject parameters;
+                RESPONSETYPE responseType;
+                status = transport->Invoke(propertyName, parameters, responseType);
+                if (status == Firebolt::Error::None) {
+                    ASSERT(response.IsValid() == false);
+                    if (response.IsValid() == true) {
+                        response.Release();
+                    }
+                    response = WPEFramework::Core::ProxyType<RESPONSETYPE>::Create();
+                    (*response) = responseType;
                 }
-                response = WPEFramework::Core::ProxyType<RESPONSETYPE>::Create();
-                (*response) = responseType;
+            } else {
+                FIREBOLT_LOG_ERROR(Logger::Category::OpenRPC, Logger::Module<Accessor>(), "Error in getting Transport err = %d", status);
             }
-        }
-        else
-        {
-            FIREBOLT_LOG_ERROR(Logger::Category::OpenRPC, Logger::Module<Accessor>(),
-                               "Error in getting Transport err = %d", status);
+
+            return status;
         }
 
-        return status;
-    }
-
-    template <typename PARAMETERS, typename RESPONSETYPE>
-    static Firebolt::Error Get(const string& propertyName, const PARAMETERS& parameters,
-                               WPEFramework::Core::ProxyType<RESPONSETYPE>& response)
-    {
-        Firebolt::Error status = Firebolt::Error::General;
-        Transport<WPEFramework::Core::JSON::IElement>* transport = Accessor::Instance().GetTransport();
-        if (transport != nullptr)
+        template <typename PARAMETERS, typename RESPONSETYPE>
+        static Firebolt::Error Get(const string& propertyName, const PARAMETERS& parameters, WPEFramework::Core::ProxyType<RESPONSETYPE>& response)
         {
-            RESPONSETYPE responseType;
-            status = transport->Invoke(propertyName, parameters, responseType);
-            if (status == Firebolt::Error::None)
-            {
-                ASSERT(response.IsValid() == false);
-                if (response.IsValid() == true)
-                {
-                    response.Release();
+            Firebolt::Error status = Firebolt::Error::General;
+            Transport<WPEFramework::Core::JSON::IElement>* transport = Accessor::Instance().GetTransport();
+            if (transport != nullptr) {
+                RESPONSETYPE responseType;
+                status = transport->Invoke(propertyName, parameters, responseType);
+                if (status == Firebolt::Error::None) {
+                    ASSERT(response.IsValid() == false);
+                    if (response.IsValid() == true) {
+                        response.Release();
+                    }
+                    response = WPEFramework::Core::ProxyType<RESPONSETYPE>::Create();
+                    (*response) = responseType;
                 }
-                response = WPEFramework::Core::ProxyType<RESPONSETYPE>::Create();
-                (*response) = responseType;
+            } else {
+                FIREBOLT_LOG_ERROR(Logger::Category::OpenRPC, Logger::Module<Accessor>(), "Error in getting Transport err = %d", status);
             }
+
+            return status;
         }
-        else
+
+
+        template <typename RESPONSETYPE>
+        static Firebolt::Error Get(const string& propertyName, RESPONSETYPE& response)
         {
-            FIREBOLT_LOG_ERROR(Logger::Category::OpenRPC, Logger::Module<Accessor>(),
-                               "Error in getting Transport err = %d", status);
+            Firebolt::Error status = Firebolt::Error::General;
+            Transport<WPEFramework::Core::JSON::IElement>* transport = Accessor::Instance().GetTransport();
+            if (transport != nullptr) {
+                JsonObject parameters;
+                status = transport->Invoke(propertyName, parameters, response);
+            } else {
+                FIREBOLT_LOG_ERROR(Logger::Category::OpenRPC, Logger::Module<Accessor>(), "Error in getting Transport err = %d", status);
+            }
+
+            return status;
         }
 
-        return status;
-    }
-
-    template <typename RESPONSETYPE> static Firebolt::Error Get(const string& propertyName, RESPONSETYPE& response)
-    {
-        Firebolt::Error status = Firebolt::Error::General;
-        Transport<WPEFramework::Core::JSON::IElement>* transport = Accessor::Instance().GetTransport();
-        if (transport != nullptr)
+        template <typename PARAMETERS, typename RESPONSETYPE>
+        static Firebolt::Error Get(const string& propertyName, const PARAMETERS& parameters, RESPONSETYPE& response)
         {
-            JsonObject parameters;
-            status = transport->Invoke(propertyName, parameters, response);
+            Firebolt::Error status = Firebolt::Error::General;
+            Transport<WPEFramework::Core::JSON::IElement>* transport = Accessor::Instance().GetTransport();
+            if (transport != nullptr) {
+                status = transport->Invoke(propertyName, parameters, response);
+            } else {
+                FIREBOLT_LOG_ERROR(Logger::Category::OpenRPC, Logger::Module<Accessor>(), "Error in getting Transport err = %d", status);
+            }
+
+            return status;
         }
-        else
+
+        template <typename PARAMETERS>
+        static Firebolt::Error Set(const string& propertyName, const PARAMETERS& parameters)
         {
-            FIREBOLT_LOG_ERROR(Logger::Category::OpenRPC, Logger::Module<Accessor>(),
-                               "Error in getting Transport err = %d", status);
+            Firebolt::Error status = Firebolt::Error::General;
+            Transport<WPEFramework::Core::JSON::IElement>* transport = Accessor::Instance().GetTransport();
+            if (transport != nullptr) {
+                JsonObject responseType;
+                status = transport->Invoke(propertyName, parameters, responseType);
+            } else {
+                FIREBOLT_LOG_ERROR(Logger::Category::OpenRPC, Logger::Module<Accessor>(), "Error in getting Transport err = %d", status);
+            }
+
+            return status;
         }
 
-        return status;
-    }
-
-    template <typename PARAMETERS, typename RESPONSETYPE>
-    static Firebolt::Error Get(const string& propertyName, const PARAMETERS& parameters, RESPONSETYPE& response)
-    {
-        Firebolt::Error status = Firebolt::Error::General;
-        Transport<WPEFramework::Core::JSON::IElement>* transport = Accessor::Instance().GetTransport();
-        if (transport != nullptr)
+        template <typename RESULT, typename CALLBACK>
+        static Firebolt::Error Subscribe(const string& propertyName, JsonObject& paramsters, const CALLBACK& callback, void* usercb, const void* userdata)
         {
-            status = transport->Invoke(propertyName, parameters, response);
+            return Event::Instance().Subscribe<RESULT, CALLBACK>(EventName(propertyName), paramsters, callback, usercb, userdata);
         }
-        else
+
+        static Firebolt::Error Unsubscribe(const string& propertyName, void* usercb)
         {
-            FIREBOLT_LOG_ERROR(Logger::Category::OpenRPC, Logger::Module<Accessor>(),
-                               "Error in getting Transport err = %d", status);
+            return Event::Instance().Unsubscribe(EventName(propertyName), usercb);
         }
-
-        return status;
-    }
-
-    template <typename PARAMETERS> static Firebolt::Error Set(const string& propertyName, const PARAMETERS& parameters)
-    {
-        Firebolt::Error status = Firebolt::Error::General;
-        Transport<WPEFramework::Core::JSON::IElement>* transport = Accessor::Instance().GetTransport();
-        if (transport != nullptr)
-        {
-            JsonObject responseType;
-            status = transport->Invoke(propertyName, parameters, responseType);
+    private:
+        static inline string EventName(const string& propertyName) {
+            size_t pos = propertyName.find_first_of('.');
+            string eventName = propertyName;
+            if (pos != std::string::npos) {
+               eventName[pos + 1] = std::toupper(eventName[pos + 1]);
+               eventName = string(eventName.substr(0, pos + 1) + "on" + eventName.substr(pos + 1) + "Changed");
+            }
+            return eventName;
         }
-        else
-        {
-            FIREBOLT_LOG_ERROR(Logger::Category::OpenRPC, Logger::Module<Accessor>(),
-                               "Error in getting Transport err = %d", status);
-        }
-
-        return status;
-    }
-
-    template <typename RESULT, typename CALLBACK>
-    static Firebolt::Error Subscribe(const string& propertyName, JsonObject& paramsters, const CALLBACK& callback,
-                                     void* usercb, const void* userdata)
-    {
-        return Event::Instance().Subscribe<RESULT, CALLBACK>(EventName(propertyName), paramsters, callback, usercb,
-                                                             userdata);
-    }
-
-    static Firebolt::Error Unsubscribe(const string& propertyName, void* usercb)
-    {
-        return Event::Instance().Unsubscribe(EventName(propertyName), usercb);
-    }
-
-private:
-    static inline string EventName(const string& propertyName)
-    {
-        size_t pos = propertyName.find_first_of('.');
-        string eventName = propertyName;
-        if (pos != std::string::npos)
-        {
-            eventName[pos + 1] = std::toupper(eventName[pos + 1]);
-            eventName = string(eventName.substr(0, pos + 1) + "on" + eventName.substr(pos + 1) + "Changed");
-        }
-        return eventName;
-    }
-};
-} // namespace FireboltSDK
+    };
+}

@@ -20,161 +20,158 @@
 
 #include "Portability.h"
 #include "Module.h"
-#include "Transport.h"
-#include "error.h"
-namespace FireboltSDK
-{
 
-static constexpr uint32_t DefaultWaitTime = 1000;
+namespace FireboltSDK {
 
-class FIREBOLTSDK_EXPORT Event : public IEventHandler
-{
-public:
-    typedef std::function<Firebolt::Error(void*, const void*, const string& parameters)> DispatchFunction;
+    static constexpr uint32_t DefaultWaitTime = 1000;
 
-private:
-    enum State : uint8_t
-    {
-        IDLE,
-        EXECUTING,
-        REVOKED
-    };
-
-    struct CallbackData
-    {
-        const DispatchFunction lambda;
-        const void* userdata;
-        State state;
-    };
-    using CallbackMap = std::map<void*, CallbackData>;
-    using EventMap = std::map<string, CallbackMap>;
-
-    class Response : public WPEFramework::Core::JSON::Container
-    {
+    class FIREBOLTSDK_EXPORT Event : public IEventHandler {
     public:
-        Response& operator=(const Response&) = delete;
-        Response() : WPEFramework::Core::JSON::Container(), Listening(false) { Add(_T("listening"), &Listening); }
-        Response(const Response& copy) : WPEFramework::Core::JSON::Container(), Listening(copy.Listening)
-        {
-            Add(_T("listening"), &Listening);
-        }
-        ~Response() override = default;
+        typedef std::function<Firebolt::Error(void*, const void*, const string& parameters)> DispatchFunction;
+    private:
+        enum State : uint8_t {
+            IDLE,
+            EXECUTING,
+            REVOKED
+        };
 
-    public:
-        WPEFramework::Core::JSON::Boolean Listening;
-    };
+        struct CallbackData {
+            const DispatchFunction lambda;
+            const void* userdata;
+            State state;
+        };
+        using CallbackMap = std::map<void*, CallbackData>;
+        using EventMap = std::map<string, CallbackMap>;
 
-private:
-    Event();
-
-public:
-    ~Event() override;
-    static Event& Instance();
-    static void Dispose();
-    void Configure(Transport<WPEFramework::Core::JSON::IElement>* transport);
-
-public:
-    template <typename RESULT, typename CALLBACK>
-    Firebolt::Error Subscribe(const string& eventName, const CALLBACK& callback, void* usercb, const void* userdata)
-    {
-        JsonObject jsonParameters;
-        return Subscribe<RESULT, CALLBACK>(eventName, jsonParameters, callback, usercb, userdata);
-    }
-
-    template <typename RESULT, typename CALLBACK>
-    Firebolt::Error Subscribe(const string& eventName, JsonObject& jsonParameters, const CALLBACK& callback,
-                              void* usercb, const void* userdata)
-    {
-        Firebolt::Error status = Firebolt::Error::General;
-        if (_transport != nullptr)
-        {
-
-            status = Assign<RESULT, CALLBACK>(eventName, callback, usercb, userdata);
-            if (status == Firebolt::Error::None)
+        class Response : public WPEFramework::Core::JSON::Container {
+        public:
+            Response& operator=(const Response&) = delete;
+            Response()
+                : WPEFramework::Core::JSON::Container()
+                , Listening(false)
             {
-                Response response;
+                Add(_T("listening"), &Listening);
+            }
+            Response(const Response& copy)
+                : WPEFramework::Core::JSON::Container()
+                , Listening(copy.Listening)
+            {
+                Add(_T("listening"), &Listening);
+            }
+            ~Response() override = default;
 
-                WPEFramework::Core::JSON::Variant Listen = true;
-                jsonParameters.Set(_T("listen"), Listen);
-                string parameters;
-                jsonParameters.ToString(parameters);
+        public:
+            WPEFramework::Core::JSON::Boolean Listening;
+        };
 
-                status = _transport->Subscribe<Response>(eventName, parameters, response);
+    private:
+        Event();
+    public:
+        ~Event() override;
+        static Event& Instance();
+        static void Dispose();
+        void Configure(Transport<WPEFramework::Core::JSON::IElement>* transport);
 
-                if (status != Firebolt::Error::None)
-                {
-                    Revoke(eventName, usercb);
+    public:
+        template <typename RESULT, typename CALLBACK>
+        Firebolt::Error Subscribe(const string& eventName, const CALLBACK& callback, void* usercb, const void* userdata)
+        {
+            JsonObject jsonParameters;
+            return Subscribe<RESULT, CALLBACK>(eventName, jsonParameters, callback, usercb, userdata);
+        }
+
+        template <typename RESULT, typename CALLBACK>
+        Firebolt::Error Subscribe(const string& eventName, JsonObject& jsonParameters, const CALLBACK& callback, void* usercb, const void* userdata, bool prioritize = false)
+        {
+            Firebolt::Error status = Firebolt::Error::General;
+
+            if (_transport != nullptr) {
+                EventMap& eventMap = prioritize ? _internalEventMap : _externalEventMap;
+                
+                status = Assign<RESULT, CALLBACK>(eventMap, eventName, callback, usercb, userdata);
+
+                if (status == Firebolt::Error::None) {
+                    Response response;
+                    WPEFramework::Core::JSON::Variant Listen = true;
+                    jsonParameters.Set(_T("listen"), Listen);
+                    string parameters;
+                    jsonParameters.ToString(parameters);
+
+                    status = _transport->Subscribe<Response>(eventName, parameters, response, prioritize);
+
+                    if (status != Firebolt::Error::None) {
+                        Revoke(eventName, usercb);
+                    } else if (response.Listening.IsSet() && response.Listening.Value()) {
+                        status = Firebolt::Error::None;
+                    }
                 }
-                else if ((response.Listening.IsSet() == true) && (response.Listening.Value() == true))
-                {
+            }
+        return status;
+        }
+
+        // To prioritize internal and external events and its corresponding callbacks
+        template <typename RESULT, typename CALLBACK>
+        Firebolt::Error Prioritize(const string& eventName,JsonObject& jsonParameters, const CALLBACK& callback, void* usercb, const void* userdata)
+        {
+            Firebolt::Error status = Firebolt::Error::General;
+            // Assuming prioritized events also need subscription via transport
+            status = Subscribe<RESULT, CALLBACK>(eventName, jsonParameters, callback, usercb, userdata, true);
+            return status;
+        }
+
+
+        Firebolt::Error Unsubscribe(const string& eventName, void* usercb);
+
+    private:
+        template <typename PARAMETERS, typename CALLBACK>
+        Firebolt::Error Assign(EventMap& eventMap, const string& eventName, const CALLBACK& callback, void* usercb, const void* userdata)
+        {
+            
+            Firebolt::Error status = Firebolt::Error::General;
+            std::function<void(void* usercb, const void* userdata, void* parameters)> actualCallback = callback;
+            DispatchFunction implementation = [actualCallback](void* usercb, const void* userdata, const string& parameters) -> Firebolt::Error {
+                WPEFramework::Core::ProxyType<PARAMETERS>* inbound = new WPEFramework::Core::ProxyType<PARAMETERS>();
+                *inbound = WPEFramework::Core::ProxyType<PARAMETERS>::Create();
+                (*inbound)->FromString(parameters);
+                actualCallback(usercb, userdata, static_cast<void*>(inbound));
+                return (Firebolt::Error::None);
+            };
+            CallbackData callbackData = {implementation, userdata, State::IDLE};
+            _adminLock.Lock();
+            EventMap::iterator eventIndex = eventMap.find(eventName);
+            if (eventIndex != eventMap.end()) {
+                CallbackMap::iterator callbackIndex = eventIndex->second.find(usercb);
+               
+                if (callbackIndex == eventIndex->second.end()) {
+                     std::cout << "Registering new callback for event: " << eventName << std::endl;
+                    eventIndex->second.emplace(std::piecewise_construct, std::forward_as_tuple(usercb), std::forward_as_tuple(callbackData));
                     status = Firebolt::Error::None;
                 }
-            }
-        }
+            } else {
 
-        return status;
-    }
-
-    Firebolt::Error Unsubscribe(const string& eventName, void* usercb);
-
-private:
-    template <typename PARAMETERS, typename CALLBACK>
-    Firebolt::Error Assign(const string& eventName, const CALLBACK& callback, void* usercb, const void* userdata)
-    {
-        Firebolt::Error status = Firebolt::Error::General;
-        std::function<void(void* usercb, const void* userdata, void* parameters)> actualCallback = callback;
-        DispatchFunction implementation = [actualCallback](void* usercb, const void* userdata,
-                                                           const string& parameters) -> Firebolt::Error
-        {
-            WPEFramework::Core::ProxyType<PARAMETERS>* inbound = new WPEFramework::Core::ProxyType<PARAMETERS>();
-            *inbound = WPEFramework::Core::ProxyType<PARAMETERS>::Create();
-            (*inbound)->FromString(parameters);
-            actualCallback(usercb, userdata, static_cast<void*>(inbound));
-            return (Firebolt::Error::None);
-        };
-        CallbackData callbackData = {implementation, userdata, State::IDLE};
-
-        _adminLock.Lock();
-        EventMap::iterator eventIndex = _eventMap.find(eventName);
-        if (eventIndex != _eventMap.end())
-        {
-            CallbackMap::iterator callbackIndex = eventIndex->second.find(usercb);
-            if (callbackIndex == eventIndex->second.end())
-            {
-                eventIndex->second.emplace(std::piecewise_construct, std::forward_as_tuple(usercb),
-                                           std::forward_as_tuple(callbackData));
+                CallbackMap callbackMap;
+                callbackMap.emplace(std::piecewise_construct, std::forward_as_tuple(usercb), std::forward_as_tuple(callbackData));
+                eventMap.emplace(std::piecewise_construct, std::forward_as_tuple(eventName), std::forward_as_tuple(callbackMap));
                 status = Firebolt::Error::None;
+
             }
+
+            _adminLock.Unlock();
+            return status;
         }
-        else
-        {
+        Firebolt::Error Revoke(const string& eventName, void* usercb);
 
-            CallbackMap callbackMap;
-            callbackMap.emplace(std::piecewise_construct, std::forward_as_tuple(usercb),
-                                std::forward_as_tuple(callbackData));
-            _eventMap.emplace(std::piecewise_construct, std::forward_as_tuple(eventName),
-                              std::forward_as_tuple(callbackMap));
-            status = Firebolt::Error::None;
-        }
+    private:
+        void Clear();
+        Firebolt::Error ValidateResponse(const WPEFramework::Core::ProxyType<WPEFramework::Core::JSONRPC::Message>& jsonResponse, bool& enabled) override;
+        Firebolt::Error Dispatch(const string& eventName, const WPEFramework::Core::ProxyType<WPEFramework::Core::JSONRPC::Message>& jsonResponse) override;
+ 
+    private: 
+        EventMap _internalEventMap;
+        EventMap _externalEventMap;
+        WPEFramework::Core::CriticalSection _adminLock;
+        Transport<WPEFramework::Core::JSON::IElement>* _transport;
 
-        _adminLock.Unlock();
-        return status;
-    }
-    Firebolt::Error Revoke(const string& eventName, void* usercb);
-
-private:
-    void Clear();
-    Firebolt::Error ValidateResponse(const WPEFramework::Core::ProxyType<WPEFramework::Core::JSONRPC::Message>& jsonResponse,
-                                     bool& enabled) override;
-    Firebolt::Error
-    Dispatch(const string& eventName,
-             const WPEFramework::Core::ProxyType<WPEFramework::Core::JSONRPC::Message>& jsonResponse) override;
-
-private:
-    EventMap _eventMap;
-    WPEFramework::Core::CriticalSection _adminLock;
-    Transport<WPEFramework::Core::JSON::IElement>* _transport;
-
-    static Event* _singleton;
-};
-} // namespace FireboltSDK
+        static Event* _singleton;
+    };
+}

@@ -16,64 +16,63 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "Async.h"
 #include "Transport.h"
+#include "Async.h"
 
-namespace FireboltSDK
-{
-Async* Async::_singleton = nullptr;
-Async::Async() : _methodMap(), _adminLock(), _transport(nullptr)
-{
-    ASSERT(_singleton == nullptr);
-    _singleton = this;
-}
-
-Async::~Async() /* override */
-{
-    Clear();
-    _transport = nullptr;
-    _singleton = nullptr;
-}
-
-/* static */ Async& Async::Instance()
-{
-    static Async* instance = new Async();
-    ASSERT(instance != nullptr);
-    return *instance;
-}
-
-/* static */ void Async::Dispose()
-{
-    ASSERT(_singleton != nullptr);
-
-    if (_singleton != nullptr)
+namespace FireboltSDK {
+    Async* Async::_singleton = nullptr;
+    Async::Async()
+        : _methodMap()
+        , _adminLock()
+        , _transport(nullptr)
     {
-        delete _singleton;
+        ASSERT(_singleton == nullptr);
+        _singleton = this;
     }
-}
 
-void Async::Configure(Transport<WPEFramework::Core::JSON::IElement>* transport)
-{
-    _transport = transport;
-}
-
-void Async::Clear()
-{
-    _adminLock.Lock();
-    MethodMap::iterator index = _methodMap.begin();
-    while (index != _methodMap.end())
+    Async::~Async() /* override */
     {
-        CallbackMap::iterator callbackIndex = index->second.begin();
-        while (callbackIndex != index->second.end())
-        {
-            if (IsValidJob(callbackIndex->second))
-            {
-                WPEFramework::Core::IWorkerPool::Instance().Revoke(callbackIndex->second.job);
-            }
-            callbackIndex = index->second.erase(callbackIndex);
+        Clear();
+        _transport = nullptr;
+        _singleton = nullptr;
+    }
+
+    /* static */ Async& Async::Instance()
+    {
+        static Async *instance = new Async();
+        ASSERT(instance != nullptr);
+        return *instance;
+    }
+
+    /* static */ void Async::Dispose()
+    {
+        ASSERT(_singleton != nullptr);
+
+        if (_singleton != nullptr) {
+            delete _singleton;
         }
-        index = _methodMap.erase(index);
     }
-    _adminLock.Unlock();
+
+    void Async::Configure(Transport<WPEFramework::Core::JSON::IElement>* transport)
+    {
+        _transport = transport;
+    }
+
+    void Async::Clear()
+    {
+        _adminLock.Lock();
+        MethodMap::iterator index = _methodMap.begin();
+        while (index != _methodMap.end()) {
+            CallbackMap::iterator callbackIndex = index->second.begin();
+            while (callbackIndex != index->second.end()) {
+                if (IsValidJob(callbackIndex->second)) {
+                    WPEFramework::Core::IWorkerPool::Instance().Revoke(callbackIndex->second.job);
+                }
+                callbackIndex = index->second.erase(callbackIndex);
+            }
+            index = _methodMap.erase(index);
+        }
+        _adminLock.Unlock();
+    }
 }
-} // namespace FireboltSDK
+

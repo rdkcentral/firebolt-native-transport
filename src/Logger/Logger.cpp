@@ -16,84 +16,73 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "Logger.h"
 #include "Module.h"
 #include "error.h"
+#include "Logger.h"
 
-namespace WPEFramework
-{
+namespace WPEFramework {
 
 ENUM_CONVERSION_BEGIN(FireboltSDK::Logger::LogLevel)
 
-    {FireboltSDK::Logger::LogLevel::Error, _TXT("Error")},
-    {FireboltSDK::Logger::LogLevel::Warning, _TXT("Warning")}, {FireboltSDK::Logger::LogLevel::Info, _TXT("Info")},
-    {FireboltSDK::Logger::LogLevel::Debug, _TXT("Debug")},
+    { FireboltSDK::Logger::LogLevel::Error, _TXT("Error") },
+    { FireboltSDK::Logger::LogLevel::Warning, _TXT("Warning") },
+    { FireboltSDK::Logger::LogLevel::Info, _TXT("Info") },
+    { FireboltSDK::Logger::LogLevel::Debug, _TXT("Debug") },
 
-    ENUM_CONVERSION_END(FireboltSDK::Logger::LogLevel)
+ENUM_CONVERSION_END(FireboltSDK::Logger::LogLevel)
 
-        ENUM_CONVERSION_BEGIN(FireboltSDK::Logger::Category)
+ENUM_CONVERSION_BEGIN(FireboltSDK::Logger::Category)
 
-            {FireboltSDK::Logger::Category::OpenRPC, _TXT("FireboltSDK::OpenRPC")},
-    {FireboltSDK::Logger::Category::Core, _TXT("FireboltSDK::Core")},
-    {FireboltSDK::Logger::Category::Manage, _TXT("FireboltSDK::Manage")},
-    {FireboltSDK::Logger::Category::Discovery, _TXT("FireboltSDK::Discovery")},
-    {FireboltSDK::Logger::Category::PlayerProvider, _TXT("FireboltSDK::PlayerProvider")},
-    {FireboltSDK::Logger::Category::PlayerProvider, _TXT("FireboltSDK::PlayerManager")},
+    { FireboltSDK::Logger::Category::OpenRPC, _TXT("FireboltSDK::OpenRPC") },
+    { FireboltSDK::Logger::Category::Core, _TXT("FireboltSDK::Core") },
+    { FireboltSDK::Logger::Category::Manage, _TXT("FireboltSDK::Manage") },
+    { FireboltSDK::Logger::Category::Discovery, _TXT("FireboltSDK::Discovery") },
+    { FireboltSDK::Logger::Category::PlayerProvider, _TXT("FireboltSDK::PlayerProvider") },
+    { FireboltSDK::Logger::Category::PlayerProvider, _TXT("FireboltSDK::PlayerManager") },
 
-    ENUM_CONVERSION_END(FireboltSDK::Logger::Category)
+ENUM_CONVERSION_END(FireboltSDK::Logger::Category)
 
 }
 
-namespace FireboltSDK
-{
-/* static */ Logger::LogLevel Logger::_logLevel = Logger::LogLevel::Error;
+namespace FireboltSDK {
+    /* static */  Logger::LogLevel Logger::_logLevel = Logger::LogLevel::Error;
 
-Firebolt::Error Logger::SetLogLevel(Logger::LogLevel logLevel)
-{
-    ASSERT(logLevel < Logger::LogLevel::MaxLevel);
-    Firebolt::Error status = Firebolt::Error::General;
-    if (logLevel < Logger::LogLevel::MaxLevel)
+    Firebolt::Error Logger::SetLogLevel(Logger::LogLevel logLevel)
     {
-        _logLevel = logLevel;
-        status = Firebolt::Error::None;
+        ASSERT(logLevel < Logger::LogLevel::MaxLevel);
+        Firebolt::Error status = Firebolt::Error::General;
+        if (logLevel < Logger::LogLevel::MaxLevel) {
+            _logLevel = logLevel;
+            status = Firebolt::Error::None;
+        }
+        return status;
     }
-    return status;
-}
 
-void Logger::Log(LogLevel logLevel, Category category, const std::string& module, const std::string file,
-                 const std::string function, const uint16_t line, const std::string& format, ...)
-{
-    if (logLevel <= _logLevel)
+    void Logger::Log(LogLevel logLevel, Category category, const std::string& module, const std::string file, const std::string function, const uint16_t line, const std::string& format, ...)
     {
-        va_list arg;
-        char msg[Logger::MaxBufSize];
-        va_start(arg, format);
-        int length = vsnprintf(msg, Logger::MaxBufSize, format.c_str(), arg);
-        va_end(arg);
+        if (logLevel <= _logLevel) {
+            va_list arg;
+            char msg[Logger::MaxBufSize];
+            va_start(arg, format);
+            int length = vsnprintf(msg, Logger::MaxBufSize, format.c_str(), arg);
+            va_end(arg);
 
-        uint32_t position = (length >= Logger::MaxBufSize) ? (Logger::MaxBufSize - 1) : length;
-        msg[position] = '\0';
+            uint32_t position = (length >= Logger::MaxBufSize) ? (Logger::MaxBufSize - 1) : length;
+            msg[position] = '\0';
 
-        char formattedMsg[Logger::MaxBufSize];
-        const string time = WPEFramework::Core::Time::Now().ToTimeOnly(true);
-        const string categoryName = WPEFramework::Core::EnumerateType<Logger::Category>(category).Data();
+            char formattedMsg[Logger::MaxBufSize];
+            const string time = WPEFramework::Core::Time::Now().ToTimeOnly(true);
+            const string categoryName =  WPEFramework::Core::EnumerateType<Logger::Category>(category).Data();
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-truncation"
-        if (categoryName.empty() != true)
-        {
-            snprintf(formattedMsg, sizeof(formattedMsg),
-                     "--->\033[1;32m[%s]:[%s]:[%s][%s:%d](%s)<PID:%d><TID:%ld> : %s\n", time.c_str(),
-                     categoryName.c_str(), module.c_str(), WPEFramework::Core::File::FileName(file).c_str(), line,
-                     function.c_str(), TRACE_PROCESS_ID, TRACE_THREAD_ID, msg);
-        }
-        else
-        {
-            snprintf(formattedMsg, sizeof(formattedMsg), "--->\033[1;32m[%s]:[%s][%s:%d](%s)<PID:%d><TID:%ld> : %s\n",
-                     time.c_str(), module.c_str(), WPEFramework::Core::File::FileName(file).c_str(), line,
-                     function.c_str(), TRACE_PROCESS_ID, TRACE_THREAD_ID, msg);
-        }
+            if (categoryName.empty() != true) {
+                snprintf(formattedMsg, sizeof(formattedMsg), "--->\033[1;32m[%s]:[%s]:[%s][%s:%d](%s)<PID:%d><TID:%ld> : %s\033[0m\n", time.c_str(), categoryName.c_str(), module.c_str(), WPEFramework::Core::File::FileName(file).c_str(), line, function.c_str(), TRACE_PROCESS_ID, TRACE_THREAD_ID, msg);
+            } else {
+                snprintf(formattedMsg, sizeof(formattedMsg), "--->\033[1;32m[%s]:[%s][%s:%d](%s)<PID:%d><TID:%ld> : %s\033[0m\n", time.c_str(), module.c_str(), WPEFramework::Core::File::FileName(file).c_str(), line, function.c_str(), TRACE_PROCESS_ID, TRACE_THREAD_ID, msg);
+            }
 #pragma GCC diagnostic pop
-        LOG_MESSAGE(formattedMsg);
+            LOG_MESSAGE(formattedMsg);
+        }
     }
 }
-} // namespace FireboltSDK
+

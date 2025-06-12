@@ -18,7 +18,7 @@
 
 #include "Transport.h"
 
-namespace FireboltSDK
-{
+namespace FireboltSDK {
 
 }
+
