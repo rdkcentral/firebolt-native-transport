@@ -19,6 +19,16 @@
 #include "Module.h"
 #include "error.h"
 #include "Logger.h"
+#include <stdio.h>
+#include <unistd.h>
+
+#ifdef ENABLE_SYSLOG
+#define LOG_MESSAGE(message) \
+    do { syslog(sLOG_NOTIC, "%s", message); } while (0)
+#else
+#define LOG_MESSAGE(message) \
+    do { fprintf(stderr, "%s", message); fflush(stdout); } while (0)
+#endif
 
 namespace WPEFramework {
 
@@ -73,12 +83,25 @@ namespace FireboltSDK::Transport {
             char formattedMsg[Logger::MaxBufSize];
             const string time = WPEFramework::Core::Time::Now().ToTimeOnly(true);
             const string categoryName =  WPEFramework::Core::EnumerateType<Logger::Category>(category).Data();
+            const string levelName =     WPEFramework::Core::EnumerateType<Logger::LogLevel>(logLevel).Data();
+
+            static bool colorSet     = false;
+            static char colorOn[16]  = { 0 };
+            static char colorOff[16] = { 0 };
+            if (!colorSet) {
+                colorSet = true;
+                if (isatty(fileno(stderr)) == 1) {
+                    strncpy(colorOn,  "\033[1;32m", 15);
+                    strncpy(colorOff, "\033[0m",    15);
+                }
+            }
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-truncation"
             if (categoryName.empty() != true) {
-                snprintf(formattedMsg, sizeof(formattedMsg), "--->\033[1;32m[%s]:[%s]:[%s][%s:%d](%s)<PID:%d><TID:%ld> : %s\033[0m\n", time.c_str(), categoryName.c_str(), module.c_str(), WPEFramework::Core::File::FileName(file).c_str(), line, function.c_str(), TRACE_PROCESS_ID, TRACE_THREAD_ID, msg);
+                snprintf(formattedMsg, sizeof(formattedMsg), "%s%s: [%s][%s]:[%s][%s:%d](%s)<PID:%d><TID:%ld> : %s%s\n", colorOn, time.c_str(), levelName.c_str(), categoryName.c_str(), module.c_str(), WPEFramework::Core::File::FileName(file).c_str(), line, function.c_str(), TRACE_PROCESS_ID, TRACE_THREAD_ID, msg, colorOff);
             } else {
-                snprintf(formattedMsg, sizeof(formattedMsg), "--->\033[1;32m[%s]:[%s][%s:%d](%s)<PID:%d><TID:%ld> : %s\033[0m\n", time.c_str(), module.c_str(), WPEFramework::Core::File::FileName(file).c_str(), line, function.c_str(), TRACE_PROCESS_ID, TRACE_THREAD_ID, msg);
+                snprintf(formattedMsg, sizeof(formattedMsg), "%s%s: [%s][%s][%s:%d](%s)<PID:%d><TID:%ld> : %s%s\n", colorOn, time.c_str(), levelName.c_str(), module.c_str(), WPEFramework::Core::File::FileName(file).c_str(), line, function.c_str(), TRACE_PROCESS_ID, TRACE_THREAD_ID, msg, colorOff);
             }
 #pragma GCC diagnostic pop
             LOG_MESSAGE(formattedMsg);
