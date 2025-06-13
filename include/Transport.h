@@ -25,7 +25,7 @@
 #include "json_engine.h"
 #endif
 
-namespace FireboltSDK
+namespace FireboltSDK::Transport
 {
 
     using namespace WPEFramework::Core::TypeTraits;

@@ -22,7 +22,7 @@
 #include "Accessor.h"
 #include "Event.h"
 
-namespace FireboltSDK {
+namespace FireboltSDK::Transport {
 
     class FIREBOLTSDK_EXPORT Properties {
     public:

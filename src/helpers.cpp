@@ -19,7 +19,7 @@
 
 #include "helpers.h"
 
-namespace Firebolt
+namespace Firebolt::Helpers
 {
 Parameters::Parameters(const std::vector<std::string>& value)
 {
@@ -46,13 +46,13 @@ JsonObject Parameters::operator()() const
 
 Result<void> set(const string& methodName, const Parameters& parameters)
 {
-    return Result<void>{FireboltSDK::Properties::Set(methodName, parameters())};
+    return Result<void>{FireboltSDK::Transport::Properties::Set(methodName, parameters())};
 }
 
 Result<void> invoke(const string& methodName, const Parameters& parameters)
 {
-    FireboltSDK::Transport<WPEFramework::Core::JSON::IElement>* transport =
-        FireboltSDK::Accessor::Instance().GetTransport();
+    FireboltSDK::Transport::Transport<WPEFramework::Core::JSON::IElement>* transport =
+        FireboltSDK::Transport::Accessor::Instance().GetTransport();
     if (!transport)
     {
         return Result<void>{Firebolt::Error::NotConnected};
@@ -70,7 +70,7 @@ void SubscriptionHelper::unsubscribeAll()
 {
     for (auto& subscription : subscriptions_)
     {
-        FireboltSDK::Event::Instance().Unsubscribe(subscription.second.eventName, &subscription.second);
+        FireboltSDK::Transport::Event::Instance().Unsubscribe(subscription.second.eventName, &subscription.second);
     }
     subscriptions_.clear();
 }
@@ -83,8 +83,8 @@ Result<void> SubscriptionHelper::unsubscribe(uint64_t id)
     {
         return Result<void>{Error::General};
     }
-    auto errorStatus{FireboltSDK::Event::Instance().Unsubscribe(it->second.eventName, &it->second)};
+    auto errorStatus{FireboltSDK::Transport::Event::Instance().Unsubscribe(it->second.eventName, &it->second)};
     subscriptions_.erase(it);
     return Result<void>{errorStatus};
 }
-} // namespace Firebolt
+} // namespace Firebolt::Transport

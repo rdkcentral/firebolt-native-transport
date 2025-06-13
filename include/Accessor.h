@@ -29,7 +29,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace FireboltSDK {
+namespace FireboltSDK::Transport {
     class FIREBOLTSDK_EXPORT Accessor {
     private:
         static constexpr uint8_t JSONVersion = 2;

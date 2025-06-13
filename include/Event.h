@@ -21,7 +21,7 @@
 #include "Portability.h"
 #include "Module.h"
 
-namespace FireboltSDK {
+namespace FireboltSDK::Transport {
 
     static constexpr uint32_t DefaultWaitTime = 1000;
 

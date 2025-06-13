@@ -20,7 +20,7 @@
 
 #include "Module.h"
 
-namespace FireboltSDK {
+namespace FireboltSDK::Transport {
 
     class WorkerPoolImplementation : public WPEFramework::Core::WorkerPool {
     public:

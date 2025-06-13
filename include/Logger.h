@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include <string>
 
-namespace FireboltSDK {
+namespace FireboltSDK::Transport {
 
     class FIREBOLTSDK_EXPORT Logger {
     private:
@@ -71,16 +71,16 @@ namespace FireboltSDK {
 }
 
 #define FIREBOLT_LOG(level, category, module, ...) \
-    FireboltSDK::Logger::Log(level, category, module, __FILE__, __func__, __LINE__, __VA_ARGS__)
+    FireboltSDK::Transport::Logger::Log(level, category, module, __FILE__, __func__, __LINE__, __VA_ARGS__)
 
 #define FIREBOLT_LOG_ERROR(category, module, ...) \
-    FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Error, category, module, __VA_ARGS__)
+    FIREBOLT_LOG(FireboltSDK::Transport::Logger::LogLevel::Error, category, module, __VA_ARGS__)
 #define FIREBOLT_LOG_WARNING(category, module, ...) \
-    FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Warning, category, module, __VA_ARGS__)
+    FIREBOLT_LOG(FireboltSDK::Transport::Logger::LogLevel::Warning, category, module, __VA_ARGS__)
 #define FIREBOLT_LOG_INFO(category, module, ...) \
-    FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Info, category, module, __VA_ARGS__)
+    FIREBOLT_LOG(FireboltSDK::Transport::Logger::LogLevel::Info, category, module, __VA_ARGS__)
 #define FIREBOLT_LOG_DEBUG(category, module, ...) \
-    FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Debug, category, module, __VA_ARGS__)
+    FIREBOLT_LOG(FireboltSDK::Transport::Logger::LogLevel::Debug, category, module, __VA_ARGS__)
 
 #ifdef ENABLE_SYSLOG
 #define LOG_MESSAGE(message) \

@@ -19,7 +19,7 @@
 #include "Transport.h"
 #include "Async.h"
 
-namespace FireboltSDK {
+namespace FireboltSDK::Transport {
     Async* Async::_singleton = nullptr;
     Async::Async()
         : _methodMap()

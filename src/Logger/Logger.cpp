@@ -22,29 +22,29 @@
 
 namespace WPEFramework {
 
-ENUM_CONVERSION_BEGIN(FireboltSDK::Logger::LogLevel)
+ENUM_CONVERSION_BEGIN(FireboltSDK::Transport::Logger::LogLevel)
 
-    { FireboltSDK::Logger::LogLevel::Error, _TXT("Error") },
-    { FireboltSDK::Logger::LogLevel::Warning, _TXT("Warning") },
-    { FireboltSDK::Logger::LogLevel::Info, _TXT("Info") },
-    { FireboltSDK::Logger::LogLevel::Debug, _TXT("Debug") },
+    { FireboltSDK::Transport::Logger::LogLevel::Error, _TXT("Error") },
+    { FireboltSDK::Transport::Logger::LogLevel::Warning, _TXT("Warning") },
+    { FireboltSDK::Transport::Logger::LogLevel::Info, _TXT("Info") },
+    { FireboltSDK::Transport::Logger::LogLevel::Debug, _TXT("Debug") },
 
-ENUM_CONVERSION_END(FireboltSDK::Logger::LogLevel)
+ENUM_CONVERSION_END(FireboltSDK::Transport::Logger::LogLevel)
 
-ENUM_CONVERSION_BEGIN(FireboltSDK::Logger::Category)
+ENUM_CONVERSION_BEGIN(FireboltSDK::Transport::Logger::Category)
 
-    { FireboltSDK::Logger::Category::OpenRPC, _TXT("FireboltSDK::OpenRPC") },
-    { FireboltSDK::Logger::Category::Core, _TXT("FireboltSDK::Core") },
-    { FireboltSDK::Logger::Category::Manage, _TXT("FireboltSDK::Manage") },
-    { FireboltSDK::Logger::Category::Discovery, _TXT("FireboltSDK::Discovery") },
-    { FireboltSDK::Logger::Category::PlayerProvider, _TXT("FireboltSDK::PlayerProvider") },
-    { FireboltSDK::Logger::Category::PlayerProvider, _TXT("FireboltSDK::PlayerManager") },
+    { FireboltSDK::Transport::Logger::Category::OpenRPC, _TXT("FireboltSDK::OpenRPC") },
+    { FireboltSDK::Transport::Logger::Category::Core, _TXT("FireboltSDK::Core") },
+    { FireboltSDK::Transport::Logger::Category::Manage, _TXT("FireboltSDK::Manage") },
+    { FireboltSDK::Transport::Logger::Category::Discovery, _TXT("FireboltSDK::Discovery") },
+    { FireboltSDK::Transport::Logger::Category::PlayerProvider, _TXT("FireboltSDK::PlayerProvider") },
+    { FireboltSDK::Transport::Logger::Category::PlayerProvider, _TXT("FireboltSDK::PlayerManager") },
 
-ENUM_CONVERSION_END(FireboltSDK::Logger::Category)
+ENUM_CONVERSION_END(FireboltSDK::Transport::Logger::Category)
 
 }
 
-namespace FireboltSDK {
+namespace FireboltSDK::Transport {
     /* static */  Logger::LogLevel Logger::_logLevel = Logger::LogLevel::Error;
 
     Firebolt::Error Logger::SetLogLevel(Logger::LogLevel logLevel)
