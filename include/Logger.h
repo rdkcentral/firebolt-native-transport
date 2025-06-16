@@ -24,7 +24,15 @@
 #include <stdint.h>
 #include <string>
 
-namespace FireboltSDK::Transport {
+#define FIREBOLT_LOG(level, module, ...) \
+    do { FireboltSDK::Helpers::Logger::Log(level, module, __FILE__, __func__, __LINE__, __VA_ARGS__); } while (0)
+
+#define FIREBOLT_LOG_ERROR(module, ...)   FIREBOLT_LOG(FireboltSDK::Helpers::Logger::LogLevel::Error, module, __VA_ARGS__)
+#define FIREBOLT_LOG_WARNING(module, ...) FIREBOLT_LOG(FireboltSDK::Helpers::Logger::LogLevel::Warning, module, __VA_ARGS__)
+#define FIREBOLT_LOG_INFO(module, ...)    FIREBOLT_LOG(FireboltSDK::Helpers::Logger::LogLevel::Info, module, __VA_ARGS__)
+#define FIREBOLT_LOG_DEBUG(module, ...)   FIREBOLT_LOG(FireboltSDK::Helpers::Logger::LogLevel::Debug, module, __VA_ARGS__)
+
+namespace FireboltSDK::Helpers {
 
     class FIREBOLTSDK_EXPORT Logger {
     private:
@@ -60,15 +68,4 @@ namespace FireboltSDK::Transport {
         static LogLevel _logLevel;
     };
 }
-#define FIREBOLT_LOG(level, category, module, ...) \
-    do { FireboltSDK::Transport::Logger::Log(level, category, module, __FILE__, __func__, __LINE__, __VA_ARGS__); } while (0)
-
-#define FIREBOLT_LOG_ERROR(category, module, ...) \
-    do { FIREBOLT_LOG(FireboltSDK::Transport::Logger::LogLevel::Error, category, module, __VA_ARGS__); } while (0)
-#define FIREBOLT_LOG_WARNING(category, module, ...) \
-    do { FIREBOLT_LOG(FireboltSDK::Transport::Logger::LogLevel::Warning, category, module, __VA_ARGS__); } while (0)
-#define FIREBOLT_LOG_INFO(category, module, ...) \
-    do { FIREBOLT_LOG(FireboltSDK::Transport::Logger::LogLevel::Info, category, module, __VA_ARGS__); } while (0)
-#define FIREBOLT_LOG_DEBUG(category, module, ...) \
-    do { FIREBOLT_LOG(FireboltSDK::Transport::Logger::LogLevel::Debug, category, module, __VA_ARGS__); } while (0)
 

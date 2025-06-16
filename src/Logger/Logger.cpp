@@ -32,18 +32,18 @@
 
 namespace WPEFramework {
 
-ENUM_CONVERSION_BEGIN(FireboltSDK::Transport::Logger::LogLevel)
+ENUM_CONVERSION_BEGIN(FireboltSDK::Helpers::Logger::LogLevel)
 
-    { FireboltSDK::Transport::Logger::LogLevel::Error, _TXT("Error") },
-    { FireboltSDK::Transport::Logger::LogLevel::Warning, _TXT("Warning") },
-    { FireboltSDK::Transport::Logger::LogLevel::Info, _TXT("Info") },
-    { FireboltSDK::Transport::Logger::LogLevel::Debug, _TXT("Debug") },
+    { FireboltSDK::Helpers::Logger::LogLevel::Error, _TXT("Error") },
+    { FireboltSDK::Helpers::Logger::LogLevel::Warning, _TXT("Warning") },
+    { FireboltSDK::Helpers::Logger::LogLevel::Info, _TXT("Info") },
+    { FireboltSDK::Helpers::Logger::LogLevel::Debug, _TXT("Debug") },
 
-ENUM_CONVERSION_END(FireboltSDK::Transport::Logger::LogLevel)
+ENUM_CONVERSION_END(FireboltSDK::Helpers::Logger::LogLevel)
 
 }
 
-namespace FireboltSDK::Transport {
+namespace FireboltSDK::Helpers {
     /* static */  Logger::LogLevel Logger::_logLevel = Logger::LogLevel::Error;
 
     Firebolt::Error Logger::SetLogLevel(Logger::LogLevel logLevel)

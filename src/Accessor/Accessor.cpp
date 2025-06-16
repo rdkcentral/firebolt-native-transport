@@ -33,7 +33,7 @@ namespace FireboltSDK::Transport {
         _singleton = this;
         _config.FromString(configLine);
 
-        Logger::SetLogLevel(WPEFramework::Core::EnumerateType<Logger::LogLevel>(_config.LogLevel.Value().c_str()).Value());
+        FireboltSDK::Helpers::Logger::SetLogLevel(WPEFramework::Core::EnumerateType<FireboltSDK::Helpers::Logger::LogLevel>(_config.LogLevel.Value().c_str()).Value());
 
         FIREBOLT_LOG_INFO("Accessor", "Url = %s", _config.WsUrl.Value().c_str());
         _workerPool = WPEFramework::Core::ProxyType<WorkerPoolImplementation>::Create(_config.WorkerPool.ThreadCount.Value(), _config.WorkerPool.StackSize.Value(), _config.WorkerPool.QueueSize.Value());
