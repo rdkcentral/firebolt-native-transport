@@ -21,6 +21,7 @@
 #include <memory>
 #include "Module.h"
 #include "error.h"
+#include "Logger.h"
 #ifdef UNIT_TEST
 #include "json_engine.h"
 #endif
@@ -296,7 +297,7 @@ namespace FireboltSDK::Transport
 #ifdef __DEBUG__
                 string message;
                 ToMessage(msg, message);
-                TRACE_L1("Message: %s send", message.c_str());
+                FIREBOLT_LOG_DEBUG(Logger::Category::OpenRPC, "Transport", "Message: %s send", message.c_str());
 #endif
             }
             void StateChange() override
