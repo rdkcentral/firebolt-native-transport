@@ -39,15 +39,6 @@ namespace FireboltSDK::Transport {
             MaxLevel
         };
 
-        enum class Category : uint8_t {
-            OpenRPC,
-            Core,
-            Manage,
-            Discovery,
-            PlayerProvider,
-            PlayerManager,
-        };
-
     public:
         Logger() = default;
         Logger(const Logger&) = delete;
@@ -56,7 +47,7 @@ namespace FireboltSDK::Transport {
 
     public:
         static Firebolt::Error SetLogLevel(LogLevel logLevel);
-        static void Log(LogLevel logLevel, Category category, const std::string& module, const std::string file, const std::string function, const uint16_t line, const std::string& format, ...);
+        static void Log(LogLevel logLevel, const std::string& module, const std::string file, const std::string function, const uint16_t line, const std::string& format, ...);
 
     public:
         template<typename CLASS>

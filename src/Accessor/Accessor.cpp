@@ -35,7 +35,7 @@ namespace FireboltSDK::Transport {
 
         Logger::SetLogLevel(WPEFramework::Core::EnumerateType<Logger::LogLevel>(_config.LogLevel.Value().c_str()).Value());
 
-        FIREBOLT_LOG_INFO(Logger::Category::OpenRPC, Logger::Module<Accessor>(), "Url = %s", _config.WsUrl.Value().c_str());
+        FIREBOLT_LOG_INFO("Accessor", "Url = %s", _config.WsUrl.Value().c_str());
         _workerPool = WPEFramework::Core::ProxyType<WorkerPoolImplementation>::Create(_config.WorkerPool.ThreadCount.Value(), _config.WorkerPool.StackSize.Value(), _config.WorkerPool.QueueSize.Value());
         WPEFramework::Core::WorkerPool::Assign(&(*_workerPool));
         _workerPool->Run();

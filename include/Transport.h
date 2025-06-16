@@ -297,7 +297,7 @@ namespace FireboltSDK::Transport
 #ifdef __DEBUG__
                 string message;
                 ToMessage(msg, message);
-                FIREBOLT_LOG_DEBUG(Logger::Category::OpenRPC, "Transport", "Message: %s send", message.c_str());
+                FIREBOLT_LOG_DEBUG("Transport", "Message: %s send", message.c_str());
 #endif
             }
             void StateChange() override
