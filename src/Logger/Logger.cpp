@@ -21,6 +21,7 @@
 #include "Logger.h"
 #include <stdio.h>
 #include <unistd.h>
+#include <filesystem>
 
 #ifdef ENABLE_SYSLOG
 #define LOG_MESSAGE(message) \
@@ -100,7 +101,7 @@ namespace FireboltSDK::Helpers {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-truncation"
-            snprintf(formattedMsg, sizeof(formattedMsg), "%s: [%s%s%s][%s][%s:%d](%s)<PID:%d><TID:%ld> : %s\n", time.c_str(), color, levelName.c_str(), colorOff, module.c_str(), WPEFramework::Core::File::FileName(file).c_str(), line, function.c_str(), TRACE_PROCESS_ID, TRACE_THREAD_ID, msg);
+            snprintf(formattedMsg, sizeof(formattedMsg), "%s: [%s%s%s][%s][%s(), %s:%d]<pid:%d, tid:%ld>: %s\n", time.c_str(), color, levelName.c_str(), colorOff, module.c_str(), function.c_str(), std::filesystem::path(file).filename().c_str(), line, TRACE_PROCESS_ID, TRACE_THREAD_ID, msg);
 #pragma GCC diagnostic pop
             LOG_MESSAGE(formattedMsg);
         }
