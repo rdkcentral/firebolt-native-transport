@@ -41,17 +41,6 @@ ENUM_CONVERSION_BEGIN(FireboltSDK::Transport::Logger::LogLevel)
 
 ENUM_CONVERSION_END(FireboltSDK::Transport::Logger::LogLevel)
 
-ENUM_CONVERSION_BEGIN(FireboltSDK::Transport::Logger::Category)
-
-    { FireboltSDK::Transport::Logger::Category::OpenRPC, _TXT("FireboltSDK::OpenRPC") },
-    { FireboltSDK::Transport::Logger::Category::Core, _TXT("FireboltSDK::Core") },
-    { FireboltSDK::Transport::Logger::Category::Manage, _TXT("FireboltSDK::Manage") },
-    { FireboltSDK::Transport::Logger::Category::Discovery, _TXT("FireboltSDK::Discovery") },
-    { FireboltSDK::Transport::Logger::Category::PlayerProvider, _TXT("FireboltSDK::PlayerProvider") },
-    { FireboltSDK::Transport::Logger::Category::PlayerProvider, _TXT("FireboltSDK::PlayerManager") },
-
-ENUM_CONVERSION_END(FireboltSDK::Transport::Logger::Category)
-
 }
 
 namespace FireboltSDK::Transport {
@@ -68,7 +57,7 @@ namespace FireboltSDK::Transport {
         return status;
     }
 
-    void Logger::Log(LogLevel logLevel, Category category, const std::string& module, const std::string file, const std::string function, const uint16_t line, const std::string& format, ...)
+    void Logger::Log(LogLevel logLevel, const std::string& module, const std::string file, const std::string function, const uint16_t line, const std::string& format, ...)
     {
         if (logLevel <= _logLevel) {
             va_list arg;
@@ -82,7 +71,6 @@ namespace FireboltSDK::Transport {
 
             char formattedMsg[Logger::MaxBufSize];
             const string time = WPEFramework::Core::Time::Now().ToTimeOnly(true);
-            const string categoryName =  WPEFramework::Core::EnumerateType<Logger::Category>(category).Data();
             const string levelName =     WPEFramework::Core::EnumerateType<Logger::LogLevel>(logLevel).Data();
 
             static char colorErr[16] = { 0 };
@@ -112,11 +100,7 @@ namespace FireboltSDK::Transport {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-truncation"
-            if (categoryName.empty() != true) {
-                snprintf(formattedMsg, sizeof(formattedMsg), "%s: [%s%s%s][%s]:[%s][%s:%d](%s)<PID:%d><TID:%ld> : %s\n", time.c_str(), color, levelName.c_str(), colorOff, categoryName.c_str(), module.c_str(), WPEFramework::Core::File::FileName(file).c_str(), line, function.c_str(), TRACE_PROCESS_ID, TRACE_THREAD_ID, msg);
-            } else {
-                snprintf(formattedMsg, sizeof(formattedMsg), "%s: [%s%s%s][%s][%s:%d](%s)<PID:%d><TID:%ld> : %s\n", time.c_str(), color, levelName.c_str(), colorOff, module.c_str(), WPEFramework::Core::File::FileName(file).c_str(), line, function.c_str(), TRACE_PROCESS_ID, TRACE_THREAD_ID, msg);
-            }
+            snprintf(formattedMsg, sizeof(formattedMsg), "%s: [%s%s%s][%s][%s:%d](%s)<PID:%d><TID:%ld> : %s\n", time.c_str(), color, levelName.c_str(), colorOff, module.c_str(), WPEFramework::Core::File::FileName(file).c_str(), line, function.c_str(), TRACE_PROCESS_ID, TRACE_THREAD_ID, msg);
 #pragma GCC diagnostic pop
             LOG_MESSAGE(formattedMsg);
         }

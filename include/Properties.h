@@ -51,7 +51,7 @@ namespace FireboltSDK::Transport {
                     (*response) = responseType;
                 }
             } else {
-                FIREBOLT_LOG_ERROR(Logger::Category::OpenRPC, Logger::Module<Accessor>(), "Error in getting Transport err = %d", status);
+                FIREBOLT_LOG_ERROR("Properties", "Error in getting Transport err = %d", status);
             }
 
             return status;
@@ -74,7 +74,7 @@ namespace FireboltSDK::Transport {
                     (*response) = responseType;
                 }
             } else {
-                FIREBOLT_LOG_ERROR(Logger::Category::OpenRPC, Logger::Module<Accessor>(), "Error in getting Transport err = %d", status);
+                FIREBOLT_LOG_ERROR("Properties", "Error in getting Transport err = %d", status);
             }
 
             return status;
@@ -90,7 +90,7 @@ namespace FireboltSDK::Transport {
                 JsonObject parameters;
                 status = transport->Invoke(propertyName, parameters, response);
             } else {
-                FIREBOLT_LOG_ERROR(Logger::Category::OpenRPC, Logger::Module<Accessor>(), "Error in getting Transport err = %d", status);
+                FIREBOLT_LOG_ERROR("Properties", "Error in getting Transport err = %d", status);
             }
 
             return status;
@@ -104,7 +104,7 @@ namespace FireboltSDK::Transport {
             if (transport != nullptr) {
                 status = transport->Invoke(propertyName, parameters, response);
             } else {
-                FIREBOLT_LOG_ERROR(Logger::Category::OpenRPC, Logger::Module<Accessor>(), "Error in getting Transport err = %d", status);
+                FIREBOLT_LOG_ERROR("Properties", "Error in getting Transport err = %d", status);
             }
 
             return status;
@@ -119,7 +119,7 @@ namespace FireboltSDK::Transport {
                 JsonObject responseType;
                 status = transport->Invoke(propertyName, parameters, responseType);
             } else {
-                FIREBOLT_LOG_ERROR(Logger::Category::OpenRPC, Logger::Module<Accessor>(), "Error in getting Transport err = %d", status);
+                FIREBOLT_LOG_ERROR("Properties", "Error in getting Transport err = %d", status);
             }
 
             return status;
