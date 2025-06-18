@@ -20,7 +20,7 @@
 
 #include <chrono>
 
-namespace FireboltSDK {
+namespace FireboltSDK::Transport {
 
     Accessor* Accessor::_singleton = nullptr;
 

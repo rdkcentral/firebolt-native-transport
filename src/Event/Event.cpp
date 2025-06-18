@@ -19,7 +19,7 @@
 #include "Transport.h"
 #include "Event.h"
 
-namespace FireboltSDK {
+namespace FireboltSDK::Transport {
     Event* Event::_singleton = nullptr;
     Event::Event()
         : _internalEventMap()

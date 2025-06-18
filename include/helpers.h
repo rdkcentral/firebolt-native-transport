@@ -29,7 +29,7 @@
 #include <optional>
 #include <type_traits>
 
-namespace Firebolt
+namespace Firebolt::Helpers
 {
 class FIREBOLTSDK_EXPORT Parameters
 {
@@ -85,10 +85,11 @@ template <typename T> struct IsVector<std::vector<T>>
 };
 
 template <typename JsonType, typename PropertyType>
-std::enable_if_t<!IsVector<PropertyType>::value, Result<PropertyType>> get(const string& methodName)
+FIREBOLTSDK_EXPORT std::enable_if_t<!IsVector<PropertyType>::value, Result<PropertyType>>
+get(const string& methodName)
 {
     JsonType jsonResult;
-    Error status = FireboltSDK::Properties::Get(methodName, jsonResult);
+    Error status = FireboltSDK::Transport::Properties::Get(methodName, jsonResult);
     if (status == Error::None)
     {
         return Result<PropertyType>{jsonResult.Value()};
@@ -97,11 +98,11 @@ std::enable_if_t<!IsVector<PropertyType>::value, Result<PropertyType>> get(const
 }
 
 template <typename JsonType, typename PropertyType>
-std::enable_if_t<!IsVector<PropertyType>::value, Result<PropertyType>> get(const string& methodName,
-                                                                           const Parameters& parameters)
+FIREBOLTSDK_EXPORT std::enable_if_t<!IsVector<PropertyType>::value, Result<PropertyType>>
+get(const string& methodName, const Parameters& parameters)
 {
     JsonType jsonResult;
-    Error status = FireboltSDK::Properties::Get(methodName, parameters(), jsonResult);
+    Error status = FireboltSDK::Transport::Properties::Get(methodName, parameters(), jsonResult);
     if (status == Error::None)
     {
         return Result<PropertyType>{jsonResult.Value()};
@@ -111,10 +112,11 @@ std::enable_if_t<!IsVector<PropertyType>::value, Result<PropertyType>> get(const
 
 // specialised version for containers
 template <typename JsonType, typename PropertyType>
-inline std::enable_if_t<IsVector<PropertyType>::value, Result<PropertyType>> get(const std::string& methodName)
+FIREBOLTSDK_EXPORT inline std::enable_if_t<IsVector<PropertyType>::value, Result<PropertyType>>
+get(const std::string& methodName)
 {
     WPEFramework::Core::JSON::ArrayType<JsonType> jsonResult;
-    Firebolt::Error status = FireboltSDK::Properties::Get(methodName, jsonResult);
+    Firebolt::Error status = FireboltSDK::Transport::Properties::Get(methodName, jsonResult);
     if (status == Firebolt::Error::None)
     {
         Result<PropertyType> result{PropertyType{}};
@@ -134,8 +136,8 @@ template <typename JsonType, typename PropertyType>
 FIREBOLTSDK_EXPORT inline std::enable_if_t<!std::is_void<PropertyType>::value && !IsVector<PropertyType>::value, Result<PropertyType>>
 invoke(const string& methodName, const Parameters& parameters)
 {
-    FireboltSDK::Transport<WPEFramework::Core::JSON::IElement>* transport =
-        FireboltSDK::Accessor::Instance().GetTransport();
+    FireboltSDK::Transport::Transport<WPEFramework::Core::JSON::IElement>* transport =
+        FireboltSDK::Transport::Accessor::Instance().GetTransport();
     if (!transport)
     {
         return Result<PropertyType>{Firebolt::Error::NotConnected};
@@ -153,11 +155,11 @@ FIREBOLTSDK_EXPORT Result<void> invoke(const string& methodName, const Parameter
 
 // Specialised version for containers
 template <typename JsonType, typename PropertyType>
-FIREBOLTSDK_EXPORT inline std::enable_if_t<IsVector<PropertyType>::value, Result<PropertyType>> invoke(const string& methodName,
-                                                                                    const Parameters& parameters)
+FIREBOLTSDK_EXPORT inline std::enable_if_t<IsVector<PropertyType>::value, Result<PropertyType>>
+invoke(const string& methodName, const Parameters& parameters)
 {
-    FireboltSDK::Transport<WPEFramework::Core::JSON::IElement>* transport =
-        FireboltSDK::Accessor::Instance().GetTransport();
+    FireboltSDK::Transport::Transport<WPEFramework::Core::JSON::IElement>* transport =
+        FireboltSDK::Transport::Accessor::Instance().GetTransport();
     if (!transport)
     {
         return Result<PropertyType>{Firebolt::Error::NotConnected};
@@ -247,7 +249,7 @@ protected:
         JsonObject jsonParameters;
         void* notificationPtr = reinterpret_cast<void*>(&subscriptions_[currentId_]);
         Error status =
-            FireboltSDK::Event::Instance().Subscribe<JsonType>(eventName, jsonParameters,
+            FireboltSDK::Transport::Event::Instance().Subscribe<JsonType>(eventName, jsonParameters,
                                                                onPropertyChangedCallback<JsonType, PropertyType>,
                                                                notificationPtr, nullptr);
         if (Error::None == status)
@@ -268,7 +270,7 @@ protected:
         JsonObject jsonParameters;
         void* notificationPtr = reinterpret_cast<void*>(&subscriptions_[currentId_]);
         Error status =
-            FireboltSDK::Event::Instance().Subscribe<JsonType>(eventName, jsonParameters,
+            FireboltSDK::Transport::Event::Instance().Subscribe<JsonType>(eventName, jsonParameters,
                                                                onContainerPropertyChangedCallback<JsonType, PropertyType>,
                                                                notificationPtr, nullptr);
         if (Error::None == status)
@@ -284,4 +286,4 @@ private:
     std::map<uint64_t, SubscriptionData> subscriptions_;
     uint64_t currentId_{0};
 };
-} // namespace Firebolt
+} // namespace Firebolt::Transport

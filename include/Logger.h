@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include <string>
 
-namespace FireboltSDK {
+namespace FireboltSDK::Transport {
 
     class FIREBOLTSDK_EXPORT Logger {
     private:
@@ -69,23 +69,15 @@ namespace FireboltSDK {
         static LogLevel _logLevel;
     };
 }
-
 #define FIREBOLT_LOG(level, category, module, ...) \
-    FireboltSDK::Logger::Log(level, category, module, __FILE__, __func__, __LINE__, __VA_ARGS__)
+    do { FireboltSDK::Transport::Logger::Log(level, category, module, __FILE__, __func__, __LINE__, __VA_ARGS__); } while (0)
 
 #define FIREBOLT_LOG_ERROR(category, module, ...) \
-    FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Error, category, module, __VA_ARGS__)
+    do { FIREBOLT_LOG(FireboltSDK::Transport::Logger::LogLevel::Error, category, module, __VA_ARGS__); } while (0)
 #define FIREBOLT_LOG_WARNING(category, module, ...) \
-    FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Warning, category, module, __VA_ARGS__)
+    do { FIREBOLT_LOG(FireboltSDK::Transport::Logger::LogLevel::Warning, category, module, __VA_ARGS__); } while (0)
 #define FIREBOLT_LOG_INFO(category, module, ...) \
-    FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Info, category, module, __VA_ARGS__)
+    do { FIREBOLT_LOG(FireboltSDK::Transport::Logger::LogLevel::Info, category, module, __VA_ARGS__); } while (0)
 #define FIREBOLT_LOG_DEBUG(category, module, ...) \
-    FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Debug, category, module, __VA_ARGS__)
+    do { FIREBOLT_LOG(FireboltSDK::Transport::Logger::LogLevel::Debug, category, module, __VA_ARGS__); } while (0)
 
-#ifdef ENABLE_SYSLOG
-#define LOG_MESSAGE(message) \
-    syslog(sLOG_NOTIC, "%s", message);
-#else
-#define LOG_MESSAGE(message) \
-    fprintf(stderr, "%s", message); fflush(stdout);
-#endif

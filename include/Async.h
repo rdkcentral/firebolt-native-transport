@@ -21,7 +21,7 @@
 #include "Portability.h"
 #include "Module.h"
 
-namespace FireboltSDK {
+namespace FireboltSDK::Transport {
 
     class FIREBOLTSDK_EXPORT Async {
     private:
