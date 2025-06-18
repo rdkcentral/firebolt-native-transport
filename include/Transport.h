@@ -374,7 +374,7 @@ namespace FireboltSDK::Transport
             _adminLock.Lock();
             ASSERT(std::find(_observers.begin(), _observers.end(), &client) == _observers.end());
             _observers.push_back(&client);
-            if (true)
+            if (_channel.IsOpen() == true)
             {
                 client.Opened();
             }
