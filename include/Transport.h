@@ -598,12 +598,13 @@ namespace FireboltSDK::Transport
             : _adminLock(), _connectId(WPEFramework::Core::NodeId(url.Host().Value().c_str(), url.Port().Value())), _channel(Channel::Instance(_connectId, ((url.Path().Value().rfind(PathPrefix, 0) == 0) ? url.Path().Value() : string(PathPrefix + url.Path().Value())), url.Query().Value(), true)), _eventHandler(nullptr), _pendingQueue(), _scheduledTime(0), _waitTime(waitTime), _listener(listener), _connected(false), _status(Firebolt::Error::NotConnected)
         {
             _channel->Register(*this);
-            WPEFramework::Core::ProxyType<WPEFramework::Core::IDispatch> job = WPEFramework::Core::ProxyType<WPEFramework::Core::IDispatch>(WPEFramework::Core::ProxyType<Transport::ConnectionJob>::Create(this));
-            WPEFramework::Core::IWorkerPool::Instance().Submit(job);
+            _job = WPEFramework::Core::ProxyType<WPEFramework::Core::IDispatch>(WPEFramework::Core::ProxyType<Transport::ConnectionJob>::Create(this));
+            WPEFramework::Core::IWorkerPool::Instance().Submit(_job);
         }
 
         virtual ~Transport()
         {
+            WPEFramework::Core::IWorkerPool::Instance().Revoke(_job);
             _channel->Unregister(*this);
 
             for (auto &element : _pendingQueue)
@@ -1130,5 +1131,6 @@ template <typename RESPONSE>
         Listener _listener;
         bool _connected;
         Firebolt::Error _status;
+        WPEFramework::Core::ProxyType<WPEFramework::Core::IDispatch> _job;
     };
 }
