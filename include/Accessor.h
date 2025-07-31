@@ -24,6 +24,7 @@
 #include "Transport.h"
 #include "Async.h"
 #include "Event.h"
+#include "Gateway.h"
 #include "Logger.h"
 
 #include <condition_variable>
@@ -74,11 +75,13 @@ namespace FireboltSDK::Transport {
                 , LogLevel(_T("Info"))
                 , WorkerPool()
                 , WsUrl(_T("ws://127.0.0.1:9998"))
+                , RPCv2(true)
             {
                 Add(_T("waitTime"), &WaitTime);
                 Add(_T("logLevel"), &LogLevel);
                 Add(_T("workerPool"), &WorkerPool);
                 Add(_T("wsUrl"), &WsUrl);
+                Add(_T("rpcV2"), &RPCv2);
             }
 
         public:
@@ -86,6 +89,7 @@ namespace FireboltSDK::Transport {
             WPEFramework::Core::JSON::String LogLevel;
             WorkerPoolConfig WorkerPool;
             WPEFramework::Core::JSON::String WsUrl;
+            WPEFramework::Core::JSON::Boolean RPCv2;
         };
 
         Accessor(const Accessor&) = delete;
@@ -106,6 +110,7 @@ namespace FireboltSDK::Transport {
 
             if (_singleton != nullptr) {
                 delete _singleton;
+                _singleton = nullptr;
             }
         }
 
@@ -115,6 +120,7 @@ namespace FireboltSDK::Transport {
             Firebolt::Error status = CreateTransport(_config.WsUrl.Value().c_str(), _config.WaitTime.Value());
             if (status == Firebolt::Error::None) {
                 Async::Instance().Configure(_transport);
+                Gateway::Instance().TransportUpdated(_transport);
                 status = CreateEventHandler();
             }
             return status;
@@ -135,13 +141,12 @@ namespace FireboltSDK::Transport {
             if (_transport == nullptr) {
                 return Firebolt::Error::None;
             }
-            Firebolt::Error status = Firebolt::Error::None;
-            status = DestroyTransport();
-            if (status == Firebolt::Error::None) {
-                Async::Dispose();
-                status = DestroyEventHandler();
-            }
-            return status;
+
+            Async::Dispose();
+            Gateway::Instance().TransportUpdated(nullptr);
+            DestroyTransport();
+
+            return Firebolt::Error::None;
         }
 
         bool IsConnected() const
@@ -150,7 +155,6 @@ namespace FireboltSDK::Transport {
         }
 
         Event& GetEventManager();
-        Transport<WPEFramework::Core::JSON::IElement>* GetTransport();
 
     private:
         Firebolt::Error CreateEventHandler();
@@ -161,30 +165,12 @@ namespace FireboltSDK::Transport {
         void ConnectionChanged(const bool connected, const Firebolt::Error error);
 
     private:
+        static constexpr uint32_t DefaultWaitTime = 10000;
+
         WPEFramework::Core::ProxyType<WorkerPoolImplementation> _workerPool;
         Transport<WPEFramework::Core::JSON::IElement>* _transport;
         static Accessor* _singleton;
         Config _config;
-        struct {
-            std::mutex m;
-            std::condition_variable cv;
-            bool ready = false;
-            void reset() {
-                std::lock_guard lk(m);
-                ready = false;
-            }
-            bool wait_for(unsigned duration_ms) {
-                std::unique_lock lk(m);
-                bool ret = cv.wait_for(lk, std::chrono::milliseconds(duration_ms), [&]{ return ready; });
-                lk.unlock();
-                return ret;
-            }
-            void signal() {
-                std::lock_guard lk(m);
-                ready = true;
-                cv.notify_one();
-            }
-        } _connectionChangeSync; // Synchronize a thread that is waiting for a connection if that one that is notified about connection changes
 
         bool _connected = false;
         Transport<WPEFramework::Core::JSON::IElement>::Listener _connectionChangeListener = nullptr;
