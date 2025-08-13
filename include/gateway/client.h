@@ -119,8 +119,7 @@ public:
     template <typename RESPONSE>
     Firebolt::Error Request(const std::string &method, const JsonObject &parameters, RESPONSE &response)
     {
-        std::cout << "Inside Mock Request() function, event: " << method << std::endl;
-        return Firebolt::Error::None;
+        return transport->Invoke(method, parameters, response);
     }
 #else
     template <typename RESPONSE>
