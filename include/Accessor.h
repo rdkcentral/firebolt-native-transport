@@ -120,7 +120,7 @@ namespace FireboltSDK::Transport {
             Firebolt::Error status = CreateTransport(_config.WsUrl.Value().c_str(), _config.WaitTime.Value());
             if (status == Firebolt::Error::None) {
                 Async::Instance().Configure(_transport);
-                Gateway::Instance().TransportUpdated(_transport);
+                Gateway::Instance().TransportUpdated(_transport, &_transport_pp);
                 status = CreateEventHandler();
             }
             return status;
@@ -143,7 +143,7 @@ namespace FireboltSDK::Transport {
             }
 
             Async::Dispose();
-            Gateway::Instance().TransportUpdated(nullptr);
+            Gateway::Instance().TransportUpdated(nullptr, nullptr);
             DestroyTransport();
 
             return Firebolt::Error::None;
@@ -169,6 +169,7 @@ namespace FireboltSDK::Transport {
 
         WPEFramework::Core::ProxyType<WorkerPoolImplementation> _workerPool;
         Transport<WPEFramework::Core::JSON::IElement>* _transport;
+        Transport_PP _transport_pp;
         static Accessor* _singleton;
         Config _config;
 

@@ -52,8 +52,8 @@ Gateway::~Gateway()
     implementation.reset();
 }
 
-void Gateway::TransportUpdated(Transport<WPEFramework::Core::JSON::IElement>* transport)
+void Gateway::TransportUpdated(Transport<WPEFramework::Core::JSON::IElement>* transport, Transport_PP* transportPP)
 {
-    implementation->TransportUpdated(transport);
+    implementation->TransportUpdated(transport, transportPP);
 }
 } // namespace Firebolt::Transport

@@ -78,6 +78,7 @@ namespace FireboltSDK::Transport {
                 waitTime,
                 std::bind(&Accessor::ConnectionChanged, this, std::placeholders::_1, std::placeholders::_2));
 
+        _transport_pp.Connect(url);
         ASSERT(_transport != nullptr);
         return ((_transport != nullptr) ? Firebolt::Error::None : Firebolt::Error::Timedout);
     }

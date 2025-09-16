@@ -52,7 +52,7 @@ public:
     static Gateway& Instance();
     static void Dispose();
 
-    void TransportUpdated(Transport<WPEFramework::Core::JSON::IElement>* transport);
+    void TransportUpdated(Transport<WPEFramework::Core::JSON::IElement>* transport, Transport_PP* transportPP);
 
     template <typename RESPONSE>
     Firebolt::Error Request(const std::string &method, const JsonObject &parameters, RESPONSE &response)

@@ -56,12 +56,13 @@ public:
     WPEFramework::Core::JSON::Boolean Listening;
 };
 
-class GatewayImpl : public ITransportReceiver
+class GatewayImpl : public ITransportReceiver, ITransportReceiver_PP
 {
     Config config;
     Client client;
     Server server;
     Transport<WPEFramework::Core::JSON::IElement>* transport;
+    Transport_PP* transport_pp;
 
     std::string jsonObject2String(const JsonObject &obj) {
         std::string s;
@@ -76,13 +77,22 @@ public:
     {
     }
 
-    void TransportUpdated(Transport<WPEFramework::Core::JSON::IElement>* transport)
+    void TransportUpdated(Transport<WPEFramework::Core::JSON::IElement>* transport, Transport_PP* transportPP)
     {
         this->transport = transport;
-        client.SetTransport(transport);
+        this->transport_pp = transportPP;
+        client.SetTransport(transport, transportPP);
         if (transport != nullptr) {
             transport->SetTransportReceiver(this);
         }
+        if (transportPP != nullptr) {
+            transportPP->SetTransportReceiver(this);
+        }
+    }
+
+    virtual void Receive(const std::string& message) override
+    {
+        std::cout << "Receive: " << message << std::endl;
     }
 
     virtual void Receive(const WPEFramework::Core::JSONRPC::Message& message) override

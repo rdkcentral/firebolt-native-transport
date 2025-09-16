@@ -33,6 +33,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 find_package(WPEFrameworkWebSocket CONFIG REQUIRED)
 find_package(WPEFrameworkCore CONFIG REQUIRED)
+find_package(nlohmann_json)
+find_package(websocketpp)
 
 if (ENABLE_UNIT_TESTS)
     find_package(nlohmann_json_schema_validator)
@@ -47,6 +49,7 @@ target_link_libraries(${TARGET}
     PRIVATE
         WPEFrameworkWebSocket::WPEFrameworkWebSocket
         WPEFrameworkCore::WPEFrameworkCore
+        nlohmann_json::nlohmann_json
 )
 
 target_include_directories(${TARGET}

@@ -60,6 +60,7 @@ class Client
     mutable std::mutex queue_mtx;
     Transport<WPEFramework::Core::JSON::IElement>* transport;
     Config config;
+    Transport_PP* transport_pp = nullptr;
 
     std::atomic<bool> running { false };
     std::thread watchdogThread;
@@ -102,9 +103,10 @@ public:
         watchdogThread = std::thread(std::bind(&Client::watchdog, this));
     }
 
-    void SetTransport(Transport<WPEFramework::Core::JSON::IElement>* transport)
+    void SetTransport(Transport<WPEFramework::Core::JSON::IElement>* transport, Transport_PP* transportPP)
     {
         this->transport = transport;
+        this->transport_pp = transportPP;
     }
 
     virtual ~Client()

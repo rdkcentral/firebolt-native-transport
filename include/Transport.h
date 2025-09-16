@@ -26,8 +26,110 @@
 #endif
 #include "CommunicationChannel.h"
 
+#include "nlohmann/json.hpp"
+#include <websocketpp/config/asio_no_tls_client.hpp>
+#include <websocketpp/client.hpp>
+
+#include <functional>
+#include <iostream>
+#include <thread>
+
 namespace FireboltSDK::Transport
 {
+
+    class ITransportReceiver_PP {
+    public:
+        virtual void Receive(const std::string& message) = 0;
+    };
+
+    class Transport_PP
+    {
+
+    private:
+        using client = websocketpp::client<websocketpp::config::asio_client>;
+        using message_ptr = websocketpp::config::asio_client::message_type::ptr;
+
+        static unsigned id_counter;
+
+        client c;
+        client::connection_ptr con;
+        std::thread runner_thread;
+        ITransportReceiver_PP *_transportReceiver = nullptr;
+
+    private:
+        void on_message(client* c, websocketpp::connection_hdl hdl, message_ptr msg) {
+            std::cout << "on_message: " << "msg: " << msg->get_payload() << std::endl;
+            if (_transportReceiver != nullptr) {
+                _transportReceiver->Receive(msg->get_payload());
+            }
+        }
+
+        void runner() {
+            try {
+                c.run();
+            } catch (websocketpp::exception const & e) {
+                std::cout << "runner, " << e.what() << std::endl;
+            }
+        }
+
+    public:
+        virtual ~Transport_PP() {
+            c.stop();
+            if (runner_thread.joinable()) {
+                runner_thread.join();
+            }
+        }
+
+        void Send(const nlohmann::json& message)
+        {
+            websocketpp::lib::error_code ec;
+
+            nlohmann::json msg = message;
+            msg["id"] = ++id_counter;
+            c.send(c.get_con_from_hdl(con->get_handle()), msg, websocketpp::frame::opcode::text, ec);
+            if (ec) {
+                std::cout << "Send failed, " << ec.message() << std::endl;
+            }
+        }
+
+        void Send(const std::string& message)
+        {
+            Send(nlohmann::json(message));
+        }
+
+        void SetLogging(websocketpp::log::level channel)
+        {
+            c.set_access_channels(channel);
+        }
+
+        void Connect(std::string url)
+        {
+            try {
+                SetLogging(websocketpp::log::alevel::all & ~(websocketpp::log::alevel::frame_header | websocketpp::log::alevel::frame_payload | websocketpp::log::alevel::control));
+
+                c.init_asio();
+                c.set_message_handler(websocketpp::lib::bind(&Transport_PP::on_message, this, &c, websocketpp::lib::placeholders::_1, websocketpp::lib::placeholders::_2));
+
+                websocketpp::lib::error_code ec;
+                con = c.get_connection(url, ec);
+                if (ec) {
+                    std::cout << "could not create connection, " << ec.message() << std::endl;
+                    return;
+                }
+
+                c.connect(con);
+
+                runner_thread = std::thread(std::bind(&Transport_PP::runner, this));
+            } catch (websocketpp::exception const & e) {
+                std::cout << e.what() << std::endl;
+            }
+        }
+
+        void SetTransportReceiver(ITransportReceiver_PP *transportReceiver)
+        {
+            _transportReceiver = transportReceiver;
+        }
+    };
 
     using namespace WPEFramework::Core::TypeTraits;
 
