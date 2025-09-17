@@ -214,7 +214,7 @@ public:
             std::unique_lock<std::mutex> lk(c->mtx);
 
             if (!message.contains("error")) {
-                c->response = to_string(message["result"]);
+                c->response = message["result"];
             } else {
                 c->error = static_cast<Firebolt::Error>(message["error"]["code"]);
             }
