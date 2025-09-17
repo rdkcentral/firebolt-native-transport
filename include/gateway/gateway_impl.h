@@ -26,6 +26,7 @@
 #include "error.h"
 
 #include "Transport.h"
+#include "Transport_NEW.h"
 
 #include "gateway/common.h"
 #include "gateway/client.h"

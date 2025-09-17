@@ -25,8 +25,8 @@
 #include <core/core.h>
 #include "error.h"
 
-#include "nlohmann/json.hpp"
 #include "Transport.h"
+#include "Transport_NEW.h"
 
 #include <chrono>
 #include <condition_variable>
@@ -34,6 +34,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <nlohmann/json.hpp>
 
 #include "gateway/common.h"
 

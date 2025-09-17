@@ -26,6 +26,7 @@
 #include "error.h"
 
 #include "Transport.h"
+#include "Transport_NEW.h"
 
 #include <string>
 #include <map>

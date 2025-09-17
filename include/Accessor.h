@@ -22,6 +22,7 @@
 #include "Module.h"
 #include "WorkerPool.h"
 #include "Transport.h"
+#include "Transport_NEW.h"
 #include "Async.h"
 #include "Event.h"
 #include "Gateway.h"
