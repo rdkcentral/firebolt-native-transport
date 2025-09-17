@@ -24,38 +24,38 @@
 
 namespace FireboltSDK::JSON
 {
-class NJ_String
+class String
 {
 public:
-    NJ_String() : value_() {};
-    NJ_String(const std::string& value) : value_(value) {};
-    NJ_String(const char value[]) : value_(value) {};
-    NJ_String(const NJ_String& other) : value_(other.value_) {};
-    NJ_String& operator=(const NJ_String& rhs) { value_ = rhs.value_; return *this; };
-    NJ_String& operator=(const char rhs[]) { value_ = rhs; return *this; };
-    ~NJ_String() = default;
+    String() : value_() {};
+    String(const std::string& value) : value_(value) {};
+    String(const char value[]) : value_(value) {};
+    String(const String& other) : value_(other.value_) {};
+    String& operator=(const String& rhs) { value_ = rhs.value_; return *this; };
+    String& operator=(const char rhs[]) { value_ = rhs; return *this; };
+    ~String() = default;
 
     void FromString(const std::string& str) { value_ = str; }
     std::string Value() const { return value_; }
 
 private:
-    nlohmann::json value_;
+    std::string value_;
 };
 
-class String : public WPEFramework::Core::JSON::String
+class WPE_String : public WPEFramework::Core::JSON::String
 {
     using Base = WPEFramework::Core::JSON::String;
 
 public:
-    String() : Base(), value_() {}
-    String(const char value[]) : Base(value), value_(value) {}
-    String& operator=(const char rhs[])
+    WPE_String() : Base(), value_() {}
+    WPE_String(const char value[]) : Base(value), value_(value) {}
+    WPE_String& operator=(const char rhs[])
     {
         Base::operator=(rhs);
         value_ = rhs;
         return (*this);
     }
-    String& operator=(const string rhs)
+    WPE_String& operator=(const WPE_String rhs)
     {
         Base::operator=(rhs);
         value_ = rhs;
