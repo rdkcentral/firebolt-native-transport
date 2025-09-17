@@ -52,6 +52,12 @@ public:
     {
         Add(_T("listening"), &Listening);
     }
+
+    void FromJson(const nlohmann::json& json)
+    {
+        Listening = to_string(json["listening"]) == "true";
+    }
+
     ~ListeningResponse() override = default;
 
 public:
@@ -94,7 +100,7 @@ public:
 
     virtual void Receive(const nlohmann::json& message) override
     {
-        printf("TB] II received PP : %s\n", to_string(message).c_str());
+        printf("TB] II received(new): %s\n", to_string(message).c_str());
         if (message.contains("method")) {
             if (message.contains("id")) {
                 server.Request(transport_pp, message["id"], message["method"], message["params"]);
@@ -112,7 +118,6 @@ public:
 
     virtual void Receive(const WPEFramework::Core::JSONRPC::Message& message) override
     {
-        printf("TB] II received OR\n");
         if (message.Designator.IsSet())
         { // designator -> method
             if (message.Id.IsSet()) {

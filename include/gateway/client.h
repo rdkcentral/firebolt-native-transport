@@ -52,6 +52,7 @@ class Client
         MessageID id;
         Timestamp timestamp;
         std::string response;
+        nlohmann::json response_json;
         Firebolt::Error error = Firebolt::Error::None;
         bool ready = false;
         std::mutex mtx;
@@ -144,7 +145,7 @@ public:
             queue[id] = c;
         }
 
-        printf("TB] II using PP\n");
+        printf("TB] II request(new)\n");
         Firebolt::Error result = transport_pp->Send(method, parameters, id);
         if (result == Firebolt::Error::None) {
             {
@@ -157,6 +158,7 @@ public:
             }
             if (c->error == Firebolt::Error::None) {
                 response.FromString(c->response);
+                // response.FromJson(c->response_json);
             } else {
                 result = c->error;
             }
@@ -167,7 +169,6 @@ public:
     template <typename RESPONSE>
     Firebolt::Error Request(const std::string &method, const JsonObject &parameters, RESPONSE &response)
     {
-        printf("TB] II using OR\n");
         if (transport == nullptr) {
             return Firebolt::Error::NotConnected;
         }
@@ -215,6 +216,7 @@ public:
 
             if (!message.contains("error")) {
                 c->response = message["result"];
+                c->response_json = message["result"];
             } else {
                 c->error = static_cast<Firebolt::Error>(message["error"]["code"]);
             }

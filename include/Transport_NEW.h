@@ -16,8 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #pragma once
+
+#include "error.h"
 
 #include <string>
 #include <iostream>
@@ -27,141 +28,157 @@
 
 namespace FireboltSDK::Transport
 {
-    class ITransportReceiver_PP {
-    public:
-        virtual void Receive(const nlohmann::json& message) = 0;
-    };
+class ITransportReceiver_PP {
+public:
+    virtual void Receive(const nlohmann::json& message) = 0;
+};
 
-    class Transport_PP
+class Transport_PP
+{
+
+private:
+    using client = websocketpp::client<websocketpp::config::asio_client>;
+    using message_ptr = websocketpp::config::asio_client::message_type::ptr;
+
+    unsigned id_counter_ = 0;
+    client client_;
+    client::connection_ptr connection_;
+    bool connected_ = false;
+    std::thread runner_thread_;
+    ITransportReceiver_PP *transportReceiver_ = nullptr;
+
+private:
+    void on_message(client* client_, websocketpp::connection_hdl hdl, message_ptr msg) {
+        std::cout << "on_message: " << "msg: " << msg->get_payload() << std::endl;
+        if (transportReceiver_ != nullptr) {
+            transportReceiver_->Receive(nlohmann::json::parse(msg->get_payload()));
+        }
+    }
+
+    void runner() {
+        try {
+            client_.run();
+        } catch (websocketpp::exception const & e) {
+            std::cout << "runner, " << e.what() << std::endl;
+        }
+    }
+
+    Firebolt::Error mapError(websocketpp::lib::error_code error)
     {
-
-    private:
-        using client = websocketpp::client<websocketpp::config::asio_client>;
-        using message_ptr = websocketpp::config::asio_client::message_type::ptr;
-
-        unsigned id_counter;
-
-        client c;
-        client::connection_ptr con;
-        std::thread runner_thread;
-        ITransportReceiver_PP *_transportReceiver = nullptr;
-
-    private:
-        void on_message(client* c, websocketpp::connection_hdl hdl, message_ptr msg) {
-            std::cout << "on_message: " << "msg: " << msg->get_payload() << std::endl;
-            if (_transportReceiver != nullptr) {
-                _transportReceiver->Receive(nlohmann::json::parse(msg->get_payload()));
-            }
+        using EV = websocketpp::error::value;
+        switch (error.value()) {
+            case EV::con_creation_failed:
+            case EV::unrequested_subprotocol:
+            case EV::http_connection_ended:
+            case EV::open_handshake_timeout:
+            case EV::close_handshake_timeout:
+            case EV::invalid_port:
+            case EV::rejected:
+                return Firebolt::Error::Timedout;
+            case EV::general:
+            default:
+                return Firebolt::Error::General;
         }
+    }
 
-        void runner() {
-            try {
-                c.run();
-            } catch (websocketpp::exception const & e) {
-                std::cout << "runner, " << e.what() << std::endl;
-            }
+public:
+    Transport_PP() = default;
+    Transport_PP(const Transport_PP&) = delete;
+    Transport_PP& operator=(const Transport_PP&) = delete;
+    Transport_PP(Transport_PP&&) = delete;
+    Transport_PP& operator=(Transport_PP&&) = delete;
+    virtual ~Transport_PP() {
+        client_.stop();
+        if (runner_thread_.joinable()) {
+            runner_thread_.join();
         }
+    }
 
-        Firebolt::Error mapError(websocketpp::lib::error_code error)
-        {
-            using err = websocketpp::error::value;
-            switch (error.value()) {
-                case err::con_creation_failed:
-                case err::unrequested_subprotocol:
-                case err::http_connection_ended:
-                case err::open_handshake_timeout:
-                case err::close_handshake_timeout:
-                case err::invalid_port:
-                case err::rejected:
-                    return Firebolt::Error::Timedout;
-                case err::general:
-                default:
-                    return Firebolt::Error::General;
-            }
-        }
+    Firebolt::Error Connect(std::string url)
+    {
+        try {
+            SetLogging(
+                websocketpp::log::alevel::all,
+                (websocketpp::log::alevel::frame_header | websocketpp::log::alevel::frame_payload | websocketpp::log::alevel::control));
 
-    public:
-        virtual ~Transport_PP() {
-            c.stop();
-            if (runner_thread.joinable()) {
-                runner_thread.join();
-            }
-        }
+            client_.init_asio();
+            client_.set_message_handler(websocketpp::lib::bind(&Transport_PP::on_message, this, &client_, websocketpp::lib::placeholders::_1, websocketpp::lib::placeholders::_2));
 
-        unsigned GetNextMessageID()
-        {
-            return ++id_counter;
-        }
-
-        Firebolt::Error Send(const string &method, const nlohmann::json &params, const unsigned id)
-        {
             websocketpp::lib::error_code ec;
-
-            nlohmann::json msg;
-            msg["jsonrpc"] = "2.0";
-            msg["id"] = id;
-            msg["method"] = method;
-            msg["params"] = params;
-            // printf("TB] to send: '%s'\n", to_string(msg).c_str());
-            c.send(c.get_con_from_hdl(con->get_handle()), to_string(msg), websocketpp::frame::opcode::text, ec);
+            connection_ = client_.get_connection(url, ec);
             if (ec) {
-                std::cout << "Send failed, " << ec.message() << std::endl;
-                return mapError(ec);
+                std::cout << "could not create connection, " << ec.message() << std::endl;
+                return Firebolt::Error::NotConnected;
             }
-            return Firebolt::Error::None;
+
+            client_.connect(connection_);
+
+            runner_thread_ = std::thread(std::bind(&Transport_PP::runner, this));
+            connected_ = true;
+        } catch (websocketpp::exception const & e) {
+            std::cout << e.what() << std::endl;
+            return Firebolt::Error::General;
+        }
+        return Firebolt::Error::None;
+    }
+
+    void SetTransportReceiver(ITransportReceiver_PP *transportReceiver)
+    {
+        transportReceiver_ = transportReceiver;
+    }
+
+    unsigned GetNextMessageID()
+    {
+        return ++id_counter_;
+    }
+
+    Firebolt::Error Send(const string &method, const nlohmann::json &params, const unsigned id)
+    {
+        if (!connected_) {
+            return Firebolt::Error::NotConnected;
         }
 
-        Firebolt::Error SendResponse(const unsigned id, const std::string &response)
-        {
-            websocketpp::lib::error_code ec;
+        websocketpp::lib::error_code ec;
 
-            nlohmann::json msg;
-            msg["jsonrpc"] = "2.0";
-            msg["id"] = id;
-            msg["result"] = nlohmann::json::parse(response);
-            // printf("TB] to send(resp): '%s'\n", to_string(msg).c_str());
-            c.send(c.get_con_from_hdl(con->get_handle()), to_string(msg), websocketpp::frame::opcode::text, ec);
-            if (ec) {
-                std::cout << "Send failed, " << ec.message() << std::endl;
-                return mapError(ec);
-            }
-            return Firebolt::Error::None;
+        nlohmann::json msg;
+        msg["jsonrpc"] = "2.0";
+        msg["id"] = id;
+        msg["method"] = method;
+        msg["params"] = params;
+        // printf("TB] to send: '%s'\n", to_string(msg).c_str());
+        client_.send(client_.get_con_from_hdl(connection_->get_handle()), to_string(msg), websocketpp::frame::opcode::text, ec);
+        if (ec) {
+            std::cout << "Send failed, " << ec.message() << std::endl;
+            return mapError(ec);
+        }
+        return Firebolt::Error::None;
+    }
+
+    Firebolt::Error SendResponse(const unsigned id, const std::string &response)
+    {
+        if (!connected_) {
+            return Firebolt::Error::NotConnected;
         }
 
-        void SetLogging(websocketpp::log::level include, websocketpp::log::level exclude = 0)
-        {
-            c.set_access_channels(include);
-            c.clear_access_channels(exclude);
+        websocketpp::lib::error_code ec;
+
+        nlohmann::json msg;
+        msg["jsonrpc"] = "2.0";
+        msg["id"] = id;
+        msg["result"] = nlohmann::json::parse(response);
+        // printf("TB] to send(resp): '%s'\n", to_string(msg).c_str());
+        client_.send(client_.get_con_from_hdl(connection_->get_handle()), to_string(msg), websocketpp::frame::opcode::text, ec);
+        if (ec) {
+            std::cout << "Send failed, " << ec.message() << std::endl;
+            return mapError(ec);
         }
+        return Firebolt::Error::None;
+    }
 
-        void Connect(std::string url)
-        {
-            try {
-                SetLogging(
-                    websocketpp::log::alevel::all,
-                    (websocketpp::log::alevel::frame_header | websocketpp::log::alevel::frame_payload | websocketpp::log::alevel::control));
-
-                c.init_asio();
-                c.set_message_handler(websocketpp::lib::bind(&Transport_PP::on_message, this, &c, websocketpp::lib::placeholders::_1, websocketpp::lib::placeholders::_2));
-
-                websocketpp::lib::error_code ec;
-                con = c.get_connection(url, ec);
-                if (ec) {
-                    std::cout << "could not create connection, " << ec.message() << std::endl;
-                    return;
-                }
-
-                c.connect(con);
-
-                runner_thread = std::thread(std::bind(&Transport_PP::runner, this));
-            } catch (websocketpp::exception const & e) {
-                std::cout << e.what() << std::endl;
-            }
-        }
-
-        void SetTransportReceiver(ITransportReceiver_PP *transportReceiver)
-        {
-            _transportReceiver = transportReceiver;
-        }
-    };
+    void SetLogging(websocketpp::log::level include, websocketpp::log::level exclude = 0)
+    {
+        client_.set_access_channels(include);
+        client_.clear_access_channels(exclude);
+    }
+};
 }

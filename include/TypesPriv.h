@@ -36,6 +36,7 @@ public:
     ~String() = default;
 
     void FromString(const std::string& str) { value_ = str; }
+    void FromJson(const nlohmann::json& json) { value_ = json.get<std::string>(); }
     std::string Value() const { return value_; }
 
 private:
