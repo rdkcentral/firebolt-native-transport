@@ -60,7 +60,7 @@ namespace FireboltSDK::Transport
         void on_message(client* c, websocketpp::connection_hdl hdl, message_ptr msg) {
             std::cout << "on_message: " << "msg: " << msg->get_payload() << std::endl;
             if (_transportReceiver != nullptr) {
-                _transportReceiver->Receive(msg->get_payload());
+                _transportReceiver->Receive(nlohmann::json::parse(msg->get_payload()));
             }
         }
 
@@ -90,7 +90,7 @@ namespace FireboltSDK::Transport
             return ++id_counter;
         }
 
-        Firebolt::Error Send(const string &method, const nlohmann::json& params, const unsigned id)
+        Firebolt::Error Send(const string &method, const nlohmann::json &params, const unsigned id)
         {
             websocketpp::lib::error_code ec;
 
@@ -99,7 +99,25 @@ namespace FireboltSDK::Transport
             msg["id"] = id;
             msg["method"] = method;
             msg["params"] = params;
-            c.send(c.get_con_from_hdl(con->get_handle()), msg, websocketpp::frame::opcode::text, ec);
+            // printf("TB] to send: '%s'\n", to_string(msg).c_str());
+            c.send(c.get_con_from_hdl(con->get_handle()), to_string(msg), websocketpp::frame::opcode::text, ec);
+            if (ec) {
+                std::cout << "Send failed, " << ec.message() << std::endl;
+                return mapError(ec);
+            }
+            return Firebolt::Error::None;
+        }
+
+        Firebolt::Error SendResponse(const unsigned id, const std::string &response)
+        {
+            websocketpp::lib::error_code ec;
+
+            nlohmann::json msg;
+            msg["jsonrpc"] = "2.0";
+            msg["id"] = id;
+            msg["result"] = nlohmann::json::parse(response);
+            // printf("TB] to send(resp): '%s'\n", to_string(msg).c_str());
+            c.send(c.get_con_from_hdl(con->get_handle()), to_string(msg), websocketpp::frame::opcode::text, ec);
             if (ec) {
                 std::cout << "Send failed, " << ec.message() << std::endl;
                 return mapError(ec);

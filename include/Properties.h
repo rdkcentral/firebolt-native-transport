@@ -38,7 +38,7 @@ namespace FireboltSDK::Transport {
         template <typename RESPONSETYPE>
         static Firebolt::Error GetNL(const string& propertyName, RESPONSETYPE& response)
         {
-            nlohmann::json parameters;
+            nlohmann::json parameters = nlohmann::json({});
             return Gateway::Instance().Request<RESPONSETYPE>(propertyName, parameters, response);
         }
 

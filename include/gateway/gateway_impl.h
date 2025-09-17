@@ -93,7 +93,20 @@ public:
 
     virtual void Receive(const nlohmann::json& message) override
     {
-        printf("TB] II received PP : %s\n", static_cast<std::string>(message).c_str());
+        printf("TB] II received PP : %s\n", to_string(message).c_str());
+        if (message.contains("method")) {
+            if (message.contains("id")) {
+                server.Request(transport_pp, message["id"], message["method"], message["params"]);
+            }
+            else
+            {
+                server.Notify(message["method"], message["params"]);
+            }
+        }
+        else
+        {
+            client.Response(message);
+        }
     }
 
     virtual void Receive(const WPEFramework::Core::JSONRPC::Message& message) override

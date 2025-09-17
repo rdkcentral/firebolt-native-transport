@@ -204,6 +204,26 @@ public:
         return queue.find(id) != queue.end();
     }
 
+    void Response(const nlohmann::json &message)
+    {
+        MessageID id = message["id"];
+        try {
+            std::lock_guard lck(queue_mtx);
+            auto c = queue.at(id);
+            std::unique_lock<std::mutex> lk(c->mtx);
+
+            if (!message.contains("error")) {
+                c->response = to_string(message["result"]);
+            } else {
+                c->error = static_cast<Firebolt::Error>(message["error"]["code"]);
+            }
+            c->ready = true;
+            c->waiter.notify_one();
+        } catch (const std::out_of_range &e) {
+            std::cout << "No receiver for message-id: " << id << std::endl;
+        }
+    }
+
     void Response(const WPEFramework::Core::JSONRPC::Message& message)
     {
         MessageID id = message.Id.Value();
