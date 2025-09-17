@@ -8,8 +8,8 @@ do_install=false
 while [[ ! -z $1 ]]; do
   case $1 in
   --clean ) rm -rf $bdir;;
-  --) shift; break;;
   -i | --install) do_install=true;;
+  --) shift; break;;
   *) SYSROOT_PATH="$1"; shift;;
   esac; shift
 done

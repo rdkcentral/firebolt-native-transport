@@ -25,6 +25,7 @@
 #include <core/core.h>
 #include "error.h"
 
+#include "nlohmann/json.hpp"
 #include "Transport.h"
 
 #include <chrono>
@@ -119,14 +120,53 @@ public:
 
 #ifdef UNIT_TEST
     template <typename RESPONSE>
+    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, RESPONSE &response)
+    {
+        return transport->Invoke(method, parameters, response);
+    }
+    template <typename RESPONSE>
     Firebolt::Error Request(const std::string &method, const JsonObject &parameters, RESPONSE &response)
     {
         return transport->Invoke(method, parameters, response);
     }
 #else
     template <typename RESPONSE>
+    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, RESPONSE &response)
+    {
+        if (transport_pp == nullptr) {
+            return Firebolt::Error::NotConnected;
+        }
+        MessageID id = transport_pp->GetNextMessageID();
+        std::shared_ptr<Caller> c = std::make_shared<Caller>(id);
+        {
+            std::lock_guard lck(queue_mtx);
+            queue[id] = c;
+        }
+
+        printf("TB] II using PP\n");
+        Firebolt::Error result = transport_pp->Send(method, parameters, id);
+        if (result == Firebolt::Error::None) {
+            {
+                std::unique_lock<std::mutex> lk(c->mtx);
+                c->waiter.wait(lk, [&]{ return c->ready; });
+                {
+                    std::lock_guard lck(queue_mtx);
+                    queue.erase(c->id);
+                }
+            }
+            if (c->error == Firebolt::Error::None) {
+                response.FromString(c->response);
+            } else {
+                result = c->error;
+            }
+        }
+
+        return result;
+    }
+    template <typename RESPONSE>
     Firebolt::Error Request(const std::string &method, const JsonObject &parameters, RESPONSE &response)
     {
+        printf("TB] II using OR\n");
         if (transport == nullptr) {
             return Firebolt::Error::NotConnected;
         }

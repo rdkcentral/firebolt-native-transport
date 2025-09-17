@@ -32,6 +32,7 @@
 #include "gateway/server.h"
 
 #include <string>
+#include <nlohmann/json.hpp>
 
 namespace FireboltSDK::Transport
 {
@@ -90,13 +91,14 @@ public:
         }
     }
 
-    virtual void Receive(const std::string& message) override
+    virtual void Receive(const nlohmann::json& message) override
     {
-        std::cout << "Receive: " << message << std::endl;
+        printf("TB] II received PP : %s\n", static_cast<std::string>(message).c_str());
     }
 
     virtual void Receive(const WPEFramework::Core::JSONRPC::Message& message) override
     {
+        printf("TB] II received OR\n");
         if (message.Designator.IsSet())
         { // designator -> method
             if (message.Id.IsSet()) {
@@ -109,6 +111,15 @@ public:
         {
             client.Response(message);
         }
+    }
+
+    template <typename RESPONSE>
+    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, RESPONSE &response)
+    {
+        if (transport_pp == nullptr) {
+            return Firebolt::Error::NotConnected;
+        }
+        return client.Request(method, parameters, response);
     }
 
     template <typename RESPONSE>
@@ -134,7 +145,7 @@ public:
 
         parameters.Set(_T("listen"), WPEFramework::Core::JSON::Variant(true));
         ListeningResponse response;
-        status = client.Request(event, jsonObject2String(parameters), response);
+        status = client.Request(event, nlohmann::json(jsonObject2String(parameters)), response);
         if (status == Firebolt::Error::None && (!response.Listening.IsSet() || !response.Listening.Value())) {
             status == Firebolt::Error::General;
         }
@@ -153,7 +164,7 @@ public:
         JsonObject parameters;
         parameters.Set(_T("listen"), WPEFramework::Core::JSON::Variant(false));
         ListeningResponse response;
-        status = client.Request(event, jsonObject2String(parameters), response);
+        status = client.Request(event, nlohmann::json(jsonObject2String(parameters)), response);
         if (status == Firebolt::Error::None && (!response.Listening.IsSet() || response.Listening.Value())) {
             status == Firebolt::Error::General;
         }

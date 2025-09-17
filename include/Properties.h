@@ -22,6 +22,8 @@
 #include "Event.h"
 #include "Gateway.h"
 
+#include <nlohmann/json.hpp>
+
 namespace FireboltSDK::Transport {
 
     class FIREBOLTSDK_EXPORT Properties {
@@ -34,10 +36,23 @@ namespace FireboltSDK::Transport {
 
     public:
         template <typename RESPONSETYPE>
+        static Firebolt::Error GetNL(const string& propertyName, RESPONSETYPE& response)
+        {
+            nlohmann::json parameters;
+            return Gateway::Instance().Request<RESPONSETYPE>(propertyName, parameters, response);
+        }
+
+        template <typename RESPONSETYPE>
         static Firebolt::Error Get(const string& propertyName, RESPONSETYPE& response)
         {
             JsonObject parameters;
             return Gateway::Instance().Request<RESPONSETYPE>(propertyName, parameters, response);
+        }
+
+        template <typename RESPONSETYPE>
+        static Firebolt::Error GetNL(const string& propertyName, const nlohmann::json& parameters, RESPONSETYPE& response)
+        {
+            return Gateway::Instance().Request(propertyName, parameters, response);
         }
 
         template <typename PARAMETERS, typename RESPONSETYPE>

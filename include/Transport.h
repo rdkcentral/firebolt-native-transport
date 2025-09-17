@@ -39,7 +39,7 @@ namespace FireboltSDK::Transport
 
     class ITransportReceiver_PP {
     public:
-        virtual void Receive(const std::string& message) = 0;
+        virtual void Receive(const nlohmann::json& message) = 0;
     };
 
     class Transport_PP
@@ -49,7 +49,7 @@ namespace FireboltSDK::Transport
         using client = websocketpp::client<websocketpp::config::asio_client>;
         using message_ptr = websocketpp::config::asio_client::message_type::ptr;
 
-        static unsigned id_counter;
+        unsigned id_counter;
 
         client c;
         client::connection_ptr con;
@@ -72,6 +72,11 @@ namespace FireboltSDK::Transport
             }
         }
 
+        Firebolt::Error mapError(websocketpp::lib::error_code error)
+        {
+            return Firebolt::Error::General;
+        }
+
     public:
         virtual ~Transport_PP() {
             c.stop();
@@ -80,32 +85,40 @@ namespace FireboltSDK::Transport
             }
         }
 
-        void Send(const nlohmann::json& message)
+        unsigned GetNextMessageID()
+        {
+            return ++id_counter;
+        }
+
+        Firebolt::Error Send(const string &method, const nlohmann::json& params, const unsigned id)
         {
             websocketpp::lib::error_code ec;
 
-            nlohmann::json msg = message;
-            msg["id"] = ++id_counter;
+            nlohmann::json msg;
+            msg["jsonrpc"] = "2.0";
+            msg["id"] = id;
+            msg["method"] = method;
+            msg["params"] = params;
             c.send(c.get_con_from_hdl(con->get_handle()), msg, websocketpp::frame::opcode::text, ec);
             if (ec) {
                 std::cout << "Send failed, " << ec.message() << std::endl;
+                return mapError(ec);
             }
+            return Firebolt::Error::None;
         }
 
-        void Send(const std::string& message)
+        void SetLogging(websocketpp::log::level include, websocketpp::log::level exclude = 0)
         {
-            Send(nlohmann::json(message));
-        }
-
-        void SetLogging(websocketpp::log::level channel)
-        {
-            c.set_access_channels(channel);
+            c.set_access_channels(include);
+            c.clear_access_channels(exclude);
         }
 
         void Connect(std::string url)
         {
             try {
-                SetLogging(websocketpp::log::alevel::all & ~(websocketpp::log::alevel::frame_header | websocketpp::log::alevel::frame_payload | websocketpp::log::alevel::control));
+                SetLogging(
+                    websocketpp::log::alevel::all,
+                    (websocketpp::log::alevel::frame_header | websocketpp::log::alevel::frame_payload | websocketpp::log::alevel::control));
 
                 c.init_asio();
                 c.set_message_handler(websocketpp::lib::bind(&Transport_PP::on_message, this, &c, websocketpp::lib::placeholders::_1, websocketpp::lib::placeholders::_2));

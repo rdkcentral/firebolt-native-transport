@@ -90,7 +90,7 @@ FIREBOLTSDK_EXPORT std::enable_if_t<!IsVector<PropertyType>::value, Result<Prope
 get(const string& methodName)
 {
     JsonType jsonResult;
-    Error status = FireboltSDK::Transport::Properties::Get(methodName, jsonResult);
+    Error status = FireboltSDK::Transport::Properties::GetNL(methodName, jsonResult);
     if (status == Error::None)
     {
         return Result<PropertyType>{jsonResult.Value()};

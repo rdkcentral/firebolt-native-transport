@@ -69,6 +69,8 @@ namespace FireboltSDK::Transport {
 
     Firebolt::Error Accessor::CreateTransport(const string& url, const uint32_t waitTime = DefaultWaitTime)
     {
+        _transport_pp.Connect(url);
+
         if (_transport != nullptr) {
             delete _transport;
         }
@@ -78,7 +80,6 @@ namespace FireboltSDK::Transport {
                 waitTime,
                 std::bind(&Accessor::ConnectionChanged, this, std::placeholders::_1, std::placeholders::_2));
 
-        _transport_pp.Connect(url);
         ASSERT(_transport != nullptr);
         return ((_transport != nullptr) ? Firebolt::Error::None : Firebolt::Error::Timedout);
     }
