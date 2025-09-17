@@ -24,20 +24,21 @@
 
 namespace FireboltSDK::JSON
 {
-class String
+template <typename T>
+class NL_Json_Basic {
+public:
+    virtual ~NL_Json_Basic() = default;
+    virtual void FromJson(const nlohmann::json& json) = 0;
+    T virtual Value() const = 0;
+
+    void FromString(const std::string& str) { FromJson(nlohmann::json::parse(str)); }
+};
+
+class String : public NL_Json_Basic<std::string>
 {
 public:
-    String() : value_() {};
-    String(const std::string& value) : value_(value) {};
-    String(const char value[]) : value_(value) {};
-    String(const String& other) : value_(other.value_) {};
-    String& operator=(const String& rhs) { value_ = rhs.value_; return *this; };
-    String& operator=(const char rhs[]) { value_ = rhs; return *this; };
-    ~String() = default;
-
-    void FromString(const std::string& str) { value_ = str; }
-    void FromJson(const nlohmann::json& json) { value_ = json.get<std::string>(); }
-    std::string Value() const { return value_; }
+    void FromJson(const nlohmann::json& json) override { value_ = json.get<std::string>(); }
+    std::string Value() const override { return value_; }
 
 private:
     std::string value_;

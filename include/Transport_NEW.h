@@ -35,7 +35,6 @@ public:
 
 class Transport_PP
 {
-
 private:
     using client = websocketpp::client<websocketpp::config::asio_client>;
     using message_ptr = websocketpp::config::asio_client::message_type::ptr;
@@ -43,9 +42,10 @@ private:
     unsigned id_counter_ = 0;
     client client_;
     client::connection_ptr connection_;
-    bool connected_ = false;
+    std::atomic<bool> connected_ = false;
     std::thread runner_thread_;
     ITransportReceiver_PP *transportReceiver_ = nullptr;
+    std::atomic<bool> stop_ = false;
 
 private:
     void on_message(client* client_, websocketpp::connection_hdl hdl, message_ptr msg) {
@@ -56,10 +56,14 @@ private:
     }
 
     void runner() {
-        try {
-            client_.run();
-        } catch (websocketpp::exception const & e) {
-            std::cout << "runner, " << e.what() << std::endl;
+        while (!stop_) {
+            try {
+                connected_ = true;
+                client_.run();
+            } catch (websocketpp::exception const & e) {
+                connected_ = false;
+                std::cout << "runner, " << e.what() << std::endl;
+            }
         }
     }
 
@@ -88,6 +92,7 @@ public:
     Transport_PP(Transport_PP&&) = delete;
     Transport_PP& operator=(Transport_PP&&) = delete;
     virtual ~Transport_PP() {
+        stop_ = true;
         client_.stop();
         if (runner_thread_.joinable()) {
             runner_thread_.join();
@@ -145,7 +150,6 @@ public:
         msg["id"] = id;
         msg["method"] = method;
         msg["params"] = params;
-        // printf("TB] to send: '%s'\n", to_string(msg).c_str());
         client_.send(client_.get_con_from_hdl(connection_->get_handle()), to_string(msg), websocketpp::frame::opcode::text, ec);
         if (ec) {
             std::cout << "Send failed, " << ec.message() << std::endl;
@@ -166,7 +170,6 @@ public:
         msg["jsonrpc"] = "2.0";
         msg["id"] = id;
         msg["result"] = nlohmann::json::parse(response);
-        // printf("TB] to send(resp): '%s'\n", to_string(msg).c_str());
         client_.send(client_.get_con_from_hdl(connection_->get_handle()), to_string(msg), websocketpp::frame::opcode::text, ec);
         if (ec) {
             std::cout << "Send failed, " << ec.message() << std::endl;

@@ -100,7 +100,7 @@ public:
 
     virtual void Receive(const nlohmann::json& message) override
     {
-        printf("TB] II received(new): %s\n", to_string(message).c_str());
+        printf("TB] II received(new)\n");
         if (message.contains("method")) {
             if (message.contains("id")) {
                 server.Request(transport_pp, message["id"], message["method"], message["params"]);

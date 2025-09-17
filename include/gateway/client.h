@@ -215,7 +215,7 @@ public:
             std::unique_lock<std::mutex> lk(c->mtx);
 
             if (!message.contains("error")) {
-                c->response = message["result"];
+                c->response = to_string(message["result"]);
                 c->response_json = message["result"];
             } else {
                 c->error = static_cast<Firebolt::Error>(message["error"]["code"]);
