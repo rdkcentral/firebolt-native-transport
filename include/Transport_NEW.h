@@ -33,7 +33,7 @@ public:
     virtual void Receive(const nlohmann::json& message) = 0;
 };
 
-class Transport_PP
+class Transport_PP // TODO: interface for mocking
 {
 private:
     using client = websocketpp::client<websocketpp::config::asio_client>;
