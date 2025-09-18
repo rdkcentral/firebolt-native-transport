@@ -25,6 +25,7 @@
 #include <core/core.h>
 #include "error.h"
 
+#include "TypesPriv.h"
 #include "Transport.h"
 #include "Transport_NEW.h"
 
@@ -37,31 +38,21 @@
 
 namespace FireboltSDK::Transport
 {
-class ListeningResponse : public WPEFramework::Core::JSON::Container {
+class ListeningResponse : public FireboltSDK::JSON::NL_Json_Basic<bool>
+{
 public:
-    ListeningResponse& operator=(const ListeningResponse&) = delete;
-    ListeningResponse()
-        : WPEFramework::Core::JSON::Container()
-        , Listening(false)
-    {
-        Add(_T("listening"), &Listening);
+    void FromJson(const nlohmann::json& json) override {
+        if (json.contains("listening")) {
+            value_ = json["listening"].get<bool>();
+            is_set_ = true;
+        }
     }
-    ListeningResponse(const ListeningResponse& copy)
-        : WPEFramework::Core::JSON::Container()
-        , Listening(copy.Listening)
-    {
-        Add(_T("listening"), &Listening);
-    }
-
-    void FromJson(const nlohmann::json& json)
-    {
-        Listening = to_string(json["listening"]) == "true";
-    }
-
-    ~ListeningResponse() override = default;
-
-public:
-    WPEFramework::Core::JSON::Boolean Listening;
+    bool Value() const override { return value_; }
+    bool isSet() const { return is_set_; }
+    bool isListening() const { return value_; }
+private:
+    bool value_;
+    bool is_set_ = false;
 };
 
 class GatewayImpl : public ITransportReceiver, ITransportReceiver_PP
@@ -103,15 +94,11 @@ public:
         printf("TB] II received(new)\n");
         if (message.contains("method")) {
             if (message.contains("id")) {
-                server.Request(transport_pp, message["id"], message["method"], message["params"]);
+                server.Request(transport_pp, message["id"], message["method"], to_string(message["params"]));
+            } else {
+                server.Notify(message["method"], to_string(message["params"]));
             }
-            else
-            {
-                server.Notify(message["method"], message["params"]);
-            }
-        }
-        else
-        {
+        } else {
             client.Response(message);
         }
     }
@@ -162,10 +149,11 @@ public:
             return status;
         }
 
-        parameters.Set(_T("listen"), WPEFramework::Core::JSON::Variant(true));
+        nlohmann::json params = nlohmann::json::parse(jsonObject2String(parameters));
+        params["listen"] = true;
         ListeningResponse response;
-        status = client.Request(event, nlohmann::json(jsonObject2String(parameters)), response);
-        if (status == Firebolt::Error::None && (!response.Listening.IsSet() || !response.Listening.Value())) {
+        status = client.Request(event, params, response);
+        if (status == Firebolt::Error::None && (!response.isSet() || !response.isListening())) {
             status == Firebolt::Error::General;
         }
         if (status != Firebolt::Error::None) {
@@ -180,11 +168,11 @@ public:
         if (status != Firebolt::Error::None) {
             return status;
         }
-        JsonObject parameters;
-        parameters.Set(_T("listen"), WPEFramework::Core::JSON::Variant(false));
+        nlohmann::json params;
+        params["listen"] = true;
         ListeningResponse response;
-        status = client.Request(event, nlohmann::json(jsonObject2String(parameters)), response);
-        if (status == Firebolt::Error::None && (!response.Listening.IsSet() || response.Listening.Value())) {
+        status = client.Request(event, params, response);
+        if (status == Firebolt::Error::None && (!response.isSet()|| response.isListening())) {
             status == Firebolt::Error::General;
         }
         return status;
