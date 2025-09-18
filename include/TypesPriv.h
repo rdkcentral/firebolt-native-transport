@@ -21,9 +21,21 @@
 
 #include <nlohmann/json.hpp>
 #include <string>
+#include <algorithm>
 
 namespace FireboltSDK::JSON
 {
+
+struct ICaseComparator
+{
+    bool operator()(const std::string& a, const std::string& b) const noexcept
+    {
+        return ::strcasecmp(a.c_str(), b.c_str()) < 0;
+    }
+};
+
+template <typename T> using EnumType = std::map<std::string, T, ICaseComparator>;
+
 template <typename T>
 class NL_Json_Basic {
 public:
