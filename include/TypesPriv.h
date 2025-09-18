@@ -46,6 +46,30 @@ public:
     void FromString(const std::string& str) { FromJson(nlohmann::json::parse(str)); }
 };
 
+template <typename T1, typename T2>
+class NL_Json_Array : public NL_Json_Basic<std::vector<T2>>
+{
+public:
+    void FromJson(const nlohmann::json& json) override
+    {
+        value_.clear();
+        for (const auto& item : json) {
+            T1 element;
+            element.FromJson(item);
+            value_.emplace_back(element);
+        }
+    }
+    std::vector<T2> Value() const override {
+        std::vector<T2> ret;
+        for (const auto& item : value_) {
+            ret.push_back(item.Value());
+        }
+        return ret;
+    }
+private:
+    std::vector<T1> value_;
+};
+
 class String : public NL_Json_Basic<std::string>
 {
 public:

@@ -138,12 +138,13 @@ FIREBOLTSDK_EXPORT inline std::enable_if_t<!std::is_void<PropertyType>::value &&
 invoke(const string& methodName, const Parameters& parameters)
 {
     JsonType jsonResult;
-    auto callStatus{FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters(), jsonResult)};
-    if (Error::None == callStatus)
+    nlohmann::json params;
+    Error status = FireboltSDK::Transport::Gateway::Instance().Request(methodName, params, jsonResult);
+    if (status == Error::None)
     {
         return Result<PropertyType>{jsonResult.Value()};
     }
-    return Result<PropertyType>{callStatus};
+    return Result<PropertyType>{status};
 }
 
 FIREBOLTSDK_EXPORT Result<void> invoke(const string& methodName, const Parameters& parameters);
@@ -153,19 +154,14 @@ template <typename JsonType, typename PropertyType>
 FIREBOLTSDK_EXPORT inline std::enable_if_t<IsVector<PropertyType>::value, Result<PropertyType>>
 invoke(const string& methodName, const Parameters& parameters)
 {
-    WPEFramework::Core::JSON::ArrayType<JsonType> jsonResult;
-    auto callStatus{FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters(), jsonResult)};
-    if (Error::None == callStatus)
+    JsonType jsonResult;
+    nlohmann::json params;
+    Error status = FireboltSDK::Transport::Gateway::Instance().Request(methodName, params, jsonResult);
+    if (status == Error::None)
     {
-        Result<PropertyType> result{PropertyType{}};
-        auto index(jsonResult.Elements());
-        while (index.Next() == true)
-        {
-            result->push_back(index.Current().Value());
-        }
-        return result;
+        return Result<PropertyType>{jsonResult.Value()};
     }
-    return Result<PropertyType>{callStatus};
+    return Result<PropertyType>{status};
 }
 
 struct SubscriptionData
