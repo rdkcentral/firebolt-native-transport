@@ -61,6 +61,12 @@ namespace FireboltSDK::Transport {
             return Gateway::Instance().Request(propertyName, parameters, response);
         }
 
+        static Firebolt::Error SetNL(const string& propertyName, const nlohmann::json& parameters)
+        {
+            JsonObject responseType;
+            return Gateway::Instance().Request(propertyName, parameters, responseType);
+        }
+
         template <typename PARAMETERS>
         static Firebolt::Error Set(const string& propertyName, const PARAMETERS& parameters)
         {

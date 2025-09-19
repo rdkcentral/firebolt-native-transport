@@ -35,6 +35,16 @@ struct ICaseComparator
 };
 
 template <typename T> using EnumType = std::map<std::string, T, ICaseComparator>;
+template <typename T>
+inline std::string ToString(const EnumType<T>& enumType, const T& value)
+{
+    auto it = std::find_if(enumType.begin(), enumType.end(),
+        [&value](const auto& pair) { return pair.second == value; });
+    if (it != enumType.end()) {
+        return it->first;
+    }
+    return {};
+}
 
 template <typename T>
 class NL_Json_Basic {

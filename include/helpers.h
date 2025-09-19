@@ -131,6 +131,7 @@ get(const std::string& methodName)
     return Result<PropertyType>{status};
 }
 
+FIREBOLTSDK_EXPORT Result<void> setNL(const string& methodName, const nlohmann::json& parameters);
 FIREBOLTSDK_EXPORT Result<void> set(const string& methodName, const Parameters& parameters);
 
 template <typename JsonType, typename PropertyType>

@@ -44,6 +44,11 @@ JsonObject Parameters::operator()() const
     return object_;
 }
 
+Result<void> setNL(const string& methodName, const nlohmann::json& parameters)
+{
+    return Result<void>{FireboltSDK::Transport::Properties::SetNL(methodName, parameters)};
+}
+
 Result<void> set(const string& methodName, const Parameters& parameters)
 {
     return Result<void>{FireboltSDK::Transport::Properties::Set(methodName, parameters())};
