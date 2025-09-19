@@ -54,6 +54,12 @@ Result<void> set(const string& methodName, const Parameters& parameters)
     return Result<void>{FireboltSDK::Transport::Properties::Set(methodName, parameters())};
 }
 
+Result<void> invokeNL(const string& methodName, const nlohmann::json& parameters)
+{
+    WPEFramework::Core::JSON::VariantContainer result;
+    return Result<void>{FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters, result)};
+}
+
 Result<void> invoke(const string& methodName, const Parameters& parameters)
 {
     WPEFramework::Core::JSON::VariantContainer result;

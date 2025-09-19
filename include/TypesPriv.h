@@ -22,6 +22,8 @@
 #include <nlohmann/json.hpp>
 #include <string>
 #include <algorithm>
+#include <cctype>
+#include <map>
 
 namespace FireboltSDK::JSON
 {
@@ -66,18 +68,14 @@ public:
         for (const auto& item : json) {
             T1 element;
             element.FromJson(item);
-            value_.emplace_back(element);
+            value_.push_back(element.Value());
         }
     }
     std::vector<T2> Value() const override {
-        std::vector<T2> ret;
-        for (const auto& item : value_) {
-            ret.push_back(item.Value());
-        }
-        return ret;
+        return value_;
     }
 private:
-    std::vector<T1> value_;
+    std::vector<T2> value_;
 };
 
 class String : public NL_Json_Basic<std::string>
