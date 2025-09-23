@@ -88,6 +88,15 @@ private:
     std::string value_;
 };
 
+class Boolean : public NL_Json_Basic<bool>
+{
+public:
+    void FromJson(const nlohmann::json& json) override { value_ = json.get<bool>(); }
+    bool Value() const override { return value_; }
+private:
+    bool value_;
+};
+
 class WPE_String : public WPEFramework::Core::JSON::String
 {
     using Base = WPEFramework::Core::JSON::String;

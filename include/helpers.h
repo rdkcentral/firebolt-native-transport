@@ -100,10 +100,10 @@ get(const string& methodName)
 
 template <typename JsonType, typename PropertyType>
 FIREBOLTSDK_EXPORT std::enable_if_t<!IsVector<PropertyType>::value, Result<PropertyType>>
-get(const string& methodName, const Parameters& parameters)
+get(const string& methodName, const nlohmann::json& parameters)
 {
     JsonType jsonResult;
-    Error status = FireboltSDK::Transport::Properties::Get(methodName, parameters(), jsonResult);
+    Error status = FireboltSDK::Transport::Properties::GetNL(methodName, parameters, jsonResult);
     if (status == Error::None)
     {
         return Result<PropertyType>{jsonResult.Value()};
@@ -133,42 +133,9 @@ get(const std::string& methodName)
 
 FIREBOLTSDK_EXPORT Result<void> invokeNL(const string& methodName, const nlohmann::json& parameters);
 FIREBOLTSDK_EXPORT Result<void> setNL(const string& methodName, const nlohmann::json& parameters);
-FIREBOLTSDK_EXPORT Result<void> set(const string& methodName, const Parameters& parameters);
 
 template <typename JsonType, typename PropertyType>
-FIREBOLTSDK_EXPORT inline std::enable_if_t<!std::is_void<PropertyType>::value && !IsVector<PropertyType>::value, Result<PropertyType>>
-invoke(const string& methodName, const Parameters& parameters)
-{
-    JsonType jsonResult;
-    nlohmann::json params;
-    Error status = FireboltSDK::Transport::Gateway::Instance().Request(methodName, params, jsonResult);
-    if (status == Error::None)
-    {
-        return Result<PropertyType>{jsonResult.Value()};
-    }
-    return Result<PropertyType>{status};
-}
-
-template <typename JsonType, typename PropertyType>
-FIREBOLTSDK_EXPORT inline std::enable_if_t<!std::is_void<PropertyType>::value && !IsVector<PropertyType>::value, Result<PropertyType>>
-invokeNL(const string& methodName, const nlohmann::json& parameters)
-{
-    JsonType jsonResult;
-    nlohmann::json params;
-    Error status = FireboltSDK::Transport::Gateway::Instance().Request(methodName, params, jsonResult);
-    if (status == Error::None)
-    {
-        return Result<PropertyType>{jsonResult.Value()};
-    }
-    return Result<PropertyType>{status};
-}
-
-FIREBOLTSDK_EXPORT Result<void> invoke(const string& methodName, const Parameters& parameters);
-
-// Specialised version for containers
-template <typename JsonType, typename PropertyType>
-FIREBOLTSDK_EXPORT inline std::enable_if_t<IsVector<PropertyType>::value, Result<PropertyType>>
-invoke(const string& methodName, const Parameters& parameters)
+FIREBOLTSDK_EXPORT inline Result<PropertyType> invokeNL(const string& methodName, const nlohmann::json& parameters = {})
 {
     JsonType jsonResult;
     nlohmann::json params;
