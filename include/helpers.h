@@ -149,6 +149,20 @@ invoke(const string& methodName, const Parameters& parameters)
     return Result<PropertyType>{status};
 }
 
+template <typename JsonType, typename PropertyType>
+FIREBOLTSDK_EXPORT inline std::enable_if_t<!std::is_void<PropertyType>::value && !IsVector<PropertyType>::value, Result<PropertyType>>
+invokeNL(const string& methodName, const nlohmann::json& parameters)
+{
+    JsonType jsonResult;
+    nlohmann::json params;
+    Error status = FireboltSDK::Transport::Gateway::Instance().Request(methodName, params, jsonResult);
+    if (status == Error::None)
+    {
+        return Result<PropertyType>{jsonResult.Value()};
+    }
+    return Result<PropertyType>{status};
+}
+
 FIREBOLTSDK_EXPORT Result<void> invoke(const string& methodName, const Parameters& parameters);
 
 // Specialised version for containers
