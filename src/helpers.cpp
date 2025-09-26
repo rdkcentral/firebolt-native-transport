@@ -51,14 +51,8 @@ Result<void> set(const string& methodName, const Parameters& parameters)
 
 Result<void> invoke(const string& methodName, const Parameters& parameters)
 {
-    FireboltSDK::Transport::Transport<WPEFramework::Core::JSON::IElement>* transport =
-        FireboltSDK::Transport::Accessor::Instance().GetTransport();
-    if (!transport)
-    {
-        return Result<void>{Firebolt::Error::NotConnected};
-    }
     WPEFramework::Core::JSON::VariantContainer result;
-    return Result<void>{transport->Invoke(methodName, parameters(), result)};
+    return Result<void>{FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters(), result)};
 }
 
 SubscriptionHelper::~SubscriptionHelper()

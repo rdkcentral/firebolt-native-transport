@@ -25,6 +25,7 @@ project_version("1.0.0")
 set(FIREBOLT_TRANSPORT_NAMESPACE ${PROJECT_NAME} CACHE STRING "Namespace of the project")
 set(FIREBOLT_TRANSPORT_WAITTIME 1000 CACHE STRING "Maximum time to wait for Transport layer to get response")
 option(FIREBOLT_ENABLE_STATIC_LIB "Create Firebolt library as Static library" OFF)
+option(ENABLE_UNIT_TESTS "Build openrpc native test" OFF)
 
 if (FIREBOLT_ENABLE_STATIC_LIB)
     set(FIREBOLT_LIBRARY_TYPE STATIC)
@@ -38,15 +39,25 @@ if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_PREFIX_PATH ${SYSROOT_PATH}/usr/lib/cmake CACHE INTERNAL "" FORCE)
 endif()
 
+list(APPEND CMAKE_PREFIX_PATH
+        "${SYSROOT_PATH}/usr/share/cmake")
+
 list(APPEND CMAKE_MODULE_PATH
-        "${SYSROOT_PATH}/usr/lib/cmake")
+        "${SYSROOT_PATH}/usr/share/cmake"
+        "${SYSROOT_PATH}/usr/lib/cmake"
+        "${SYSROOT_PATH}/tools/cmake")
 
 find_package(WPEFramework CONFIG REQUIRED)
+
+if (ENABLE_UNIT_TESTS)
+    add_compile_definitions(UNIT_TEST UT_OPEN_RPC_FILE="firebolt-open-rpc.json")
+endif ()
 
 add_subdirectory(src)
 
 message("${CMAKE_BINARY_DIR}/${PROJECT_NAME}Config.cmake")
 
-configure_file( "${CMAKE_SOURCE_DIR}/cmake/project.cmake.in"
-  "${CMAKE_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+configure_file("${CMAKE_SOURCE_DIR}/cmake/project.cmake.in"
+    "${CMAKE_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
     @ONLY)
+

@@ -20,6 +20,7 @@
 #pragma once
 
 #include "Portability.h"
+#include "Gateway.h"
 #include "FireboltSDK.h"
 #include "common/types.h"
 #include "error.h"
@@ -136,14 +137,8 @@ template <typename JsonType, typename PropertyType>
 FIREBOLTSDK_EXPORT inline std::enable_if_t<!std::is_void<PropertyType>::value && !IsVector<PropertyType>::value, Result<PropertyType>>
 invoke(const string& methodName, const Parameters& parameters)
 {
-    FireboltSDK::Transport::Transport<WPEFramework::Core::JSON::IElement>* transport =
-        FireboltSDK::Transport::Accessor::Instance().GetTransport();
-    if (!transport)
-    {
-        return Result<PropertyType>{Firebolt::Error::NotConnected};
-    }
     JsonType jsonResult;
-    auto callStatus{transport->Invoke(methodName, parameters(), jsonResult)};
+    auto callStatus{FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters(), jsonResult)};
     if (Error::None == callStatus)
     {
         return Result<PropertyType>{jsonResult.Value()};
@@ -158,14 +153,8 @@ template <typename JsonType, typename PropertyType>
 FIREBOLTSDK_EXPORT inline std::enable_if_t<IsVector<PropertyType>::value, Result<PropertyType>>
 invoke(const string& methodName, const Parameters& parameters)
 {
-    FireboltSDK::Transport::Transport<WPEFramework::Core::JSON::IElement>* transport =
-        FireboltSDK::Transport::Accessor::Instance().GetTransport();
-    if (!transport)
-    {
-        return Result<PropertyType>{Firebolt::Error::NotConnected};
-    }
     WPEFramework::Core::JSON::ArrayType<JsonType> jsonResult;
-    auto callStatus{transport->Invoke(methodName, parameters(), jsonResult)};
+    auto callStatus{FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters(), jsonResult)};
     if (Error::None == callStatus)
     {
         Result<PropertyType> result{PropertyType{}};
