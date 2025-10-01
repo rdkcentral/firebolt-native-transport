@@ -25,7 +25,6 @@
 #include <core/core.h>
 #include "error.h"
 
-#include "Transport.h"
 #include "Transport_NEW.h"
 
 #include <chrono>
@@ -61,7 +60,6 @@ class Client
 
     std::map <MessageID, std::shared_ptr<Caller>> queue;
     mutable std::mutex queue_mtx;
-    Transport<WPEFramework::Core::JSON::IElement>* transport;
     Config config;
     Transport_PP* transport_pp = nullptr;
 
@@ -106,9 +104,8 @@ public:
         watchdogThread = std::thread(std::bind(&Client::watchdog, this));
     }
 
-    void SetTransport(Transport<WPEFramework::Core::JSON::IElement>* transport, Transport_PP* transportPP)
+    void SetTransport(Transport_PP* transportPP)
     {
-        this->transport = transport;
         this->transport_pp = transportPP;
     }
 
@@ -124,12 +121,12 @@ public:
     template <typename RESPONSE>
     Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, RESPONSE &response)
     {
-        return transport->Invoke(method, parameters, response);
+        return Firebolt::Error::General;;
     }
     template <typename RESPONSE>
     Firebolt::Error Request(const std::string &method, const JsonObject &parameters, RESPONSE &response)
     {
-        return transport->Invoke(method, parameters, response);
+        return Firebolt::Error::General;;
     }
 #else
     template <typename RESPONSE>
@@ -166,38 +163,6 @@ public:
 
         return result;
     }
-    template <typename RESPONSE>
-    Firebolt::Error Request(const std::string &method, const JsonObject &parameters, RESPONSE &response)
-    {
-        if (transport == nullptr) {
-            return Firebolt::Error::NotConnected;
-        }
-        MessageID id = transport->GetNextMessageID();
-        std::shared_ptr<Caller> c = std::make_shared<Caller>(id);
-        {
-            std::lock_guard lck(queue_mtx);
-            queue[id] = c;
-        }
-
-        Firebolt::Error result = transport->Send(method, parameters, id);
-        if (result == Firebolt::Error::None) {
-            {
-                std::unique_lock<std::mutex> lk(c->mtx);
-                c->waiter.wait(lk, [&]{ return c->ready; });
-                {
-                    std::lock_guard lck(queue_mtx);
-                    queue.erase(c->id);
-                }
-            }
-            if (c->error == Firebolt::Error::None) {
-                response.FromString(c->response);
-            } else {
-                result = c->error;
-            }
-        }
-
-        return result;
-    }
 #endif
 
     bool IdRequested(MessageID id)
@@ -219,26 +184,6 @@ public:
                 c->response_json = message["result"];
             } else {
                 c->error = static_cast<Firebolt::Error>(message["error"]["code"]);
-            }
-            c->ready = true;
-            c->waiter.notify_one();
-        } catch (const std::out_of_range &e) {
-            std::cout << "No receiver for message-id: " << id << std::endl;
-        }
-    }
-
-    void Response(const WPEFramework::Core::JSONRPC::Message& message)
-    {
-        MessageID id = message.Id.Value();
-        try {
-            std::lock_guard lck(queue_mtx);
-            auto c = queue.at(id);
-            std::unique_lock<std::mutex> lk(c->mtx);
-
-            if (!message.Error.IsSet()) {
-                c->response = message.Result.Value();
-            } else {
-                c->error = static_cast<Firebolt::Error>(message.Error.Code.Value());
             }
             c->ready = true;
             c->waiter.notify_one();

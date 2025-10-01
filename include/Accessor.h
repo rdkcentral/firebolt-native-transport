@@ -70,7 +70,7 @@ namespace FireboltSDK::Transport {
             Firebolt::Error status = CreateTransport(_config["WsUrl"], _config["WaitTime"]);
             if (status == Firebolt::Error::None) {
                 Async::Instance().Configure(_transport);
-                Gateway::Instance().TransportUpdated(_transport, &_transport_pp);
+                Gateway::Instance().TransportUpdated(&_transport_pp);
                 status = CreateEventHandler();
             }
             return status;
@@ -93,7 +93,7 @@ namespace FireboltSDK::Transport {
             }
 
             Async::Dispose();
-            Gateway::Instance().TransportUpdated(nullptr, nullptr);
+            Gateway::Instance().TransportUpdated(nullptr);
             DestroyTransport();
 
             return Firebolt::Error::None;

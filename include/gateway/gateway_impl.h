@@ -60,7 +60,6 @@ class GatewayImpl : public ITransportReceiver, ITransportReceiver_PP
     Config config;
     Client client;
     Server server;
-    Transport<WPEFramework::Core::JSON::IElement>* transport;
     Transport_PP* transport_pp;
 
     std::string jsonObject2String(const JsonObject &obj) {
@@ -76,14 +75,10 @@ public:
     {
     }
 
-    void TransportUpdated(Transport<WPEFramework::Core::JSON::IElement>* transport, Transport_PP* transportPP)
+    void TransportUpdated(Transport_PP* transportPP)
     {
-        this->transport = transport;
         this->transport_pp = transportPP;
-        client.SetTransport(transport, transportPP);
-        if (transport != nullptr) {
-            transport->SetTransportReceiver(this);
-        }
+        client.SetTransport(transportPP);
         if (transportPP != nullptr) {
             transportPP->SetTransportReceiver(this);
         }
@@ -91,7 +86,6 @@ public:
 
     virtual void Receive(const nlohmann::json& message) override
     {
-        printf("TB] II received(new)\n");
         if (message.contains("method")) {
             if (message.contains("id")) {
                 server.Request(transport_pp, message["id"], message["method"], to_string(message["params"]));
@@ -105,18 +99,6 @@ public:
 
     virtual void Receive(const WPEFramework::Core::JSONRPC::Message& message) override
     {
-        if (message.Designator.IsSet())
-        { // designator -> method
-            if (message.Id.IsSet()) {
-                server.Request(transport, message.Id.Value(), message.Designator.Value(), message.Parameters.Value());
-            } else {
-                server.Notify(message.Designator.Value(), message.Parameters.Value());
-            }
-        }
-        else
-        {
-            client.Response(message);
-        }
     }
 
     template <typename RESPONSE>
@@ -128,22 +110,9 @@ public:
         return client.Request(method, parameters, response);
     }
 
-    template <typename RESPONSE>
-    Firebolt::Error Request(const std::string &method, const JsonObject &parameters, RESPONSE &response)
-    {
-        if (transport == nullptr) {
-            return Firebolt::Error::NotConnected;
-        }
-        return client.Request(method, parameters, response);
-    }
-
     template <typename RESULT, typename CALLBACK>
     Firebolt::Error Subscribe(const string& event, JsonObject& parameters, const CALLBACK& callback, void* usercb, const void* userdata, bool prioritize = false)
     {
-        if (transport == nullptr) {
-            return Firebolt::Error::NotConnected;
-        }
-
         Firebolt::Error status = server.Subscribe<RESULT>(event, parameters, callback, usercb, userdata);
         if (status != Firebolt::Error::None) {
             return status;

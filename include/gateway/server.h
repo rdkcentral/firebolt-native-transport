@@ -160,31 +160,6 @@ public:
         }
     }
 
-    void Request(Transport<WPEFramework::Core::JSON::IElement>* transport, unsigned id, const std::string &method, const std::string &parameters)
-    {
-        size_t dotPos = method.find('.');
-        if (dotPos == std::string::npos) {
-            return;
-        }
-        std::string interface = method.substr(0, dotPos);;
-        std::string methodName = method.substr(dotPos + 1);
-        std::lock_guard lck(providers_mtx);
-        auto provider = providers.find(interface);
-        if (provider == providers.end()) {
-            return;
-        }
-        auto& methods = provider->second.methods;
-        auto it = methods.begin();
-        while (it != methods.end()) {
-            it = std::find_if(it, methods.end(), [&methodName](const Method &m) { return m.name == methodName; });
-            if (it != methods.end()) {
-                std::string response = it->lambda("{ \"parameters\":" + parameters + "}", it->usercb);
-                transport->SendResponse(id, response);
-                break;
-            }
-        }
-    }
-
     template <typename RESPONSE, typename PARAMETERS, typename CALLBACK>
     Firebolt::Error RegisterProviderInterface(const std::string &fullMethod, const PARAMETERS &parameters, const CALLBACK &callback, void* usercb)
     {

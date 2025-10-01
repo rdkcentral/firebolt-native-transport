@@ -21,28 +21,6 @@
 
 namespace Firebolt::Helpers
 {
-Parameters::Parameters(const std::vector<std::string>& value)
-{
-    WPEFramework::Core::JSON::ArrayType<WPEFramework::Core::JSON::Variant> valueArray;
-    for (auto& element : value)
-    {
-        valueArray.Add() = element;
-    }
-    WPEFramework::Core::JSON::Variant valueVariant;
-    valueVariant.Array(valueArray);
-    object_.Set("value", valueVariant);
-}
-
-Parameters& Parameters::add(const char* paramName, const WPEFramework::Core::JSON::Variant& param)
-{
-    object_.Set(paramName, param);
-    return *this;
-}
-
-JsonObject Parameters::operator()() const
-{
-    return object_;
-}
 
 Result<void> setNL(const string& methodName, const nlohmann::json& parameters)
 {

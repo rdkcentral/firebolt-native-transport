@@ -93,34 +93,4 @@ private:
     std::vector<T2> value_;
 };
 
-class WPE_String : public WPEFramework::Core::JSON::String
-{
-    using Base = WPEFramework::Core::JSON::String;
-
-public:
-    WPE_String() : Base(), value_() {}
-    WPE_String(const char value[]) : Base(value), value_(value) {}
-    WPE_String& operator=(const char rhs[])
-    {
-        Base::operator=(rhs);
-        value_ = rhs;
-        return (*this);
-    }
-    WPE_String& operator=(const WPE_String rhs)
-    {
-        Base::operator=(rhs);
-        value_ = rhs;
-        return (*this);
-    }
-
-public:
-    const std::string& Value() const
-    {
-        value_ = Base::Value();
-        return value_;
-    }
-
-private:
-    mutable std::string value_;
-};
 } // namespace FireboltSDK::JSON

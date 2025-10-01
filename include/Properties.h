@@ -43,32 +43,12 @@ namespace FireboltSDK::Transport {
         }
 
         template <typename RESPONSETYPE>
-        static Firebolt::Error Get(const string& propertyName, RESPONSETYPE& response)
-        {
-            JsonObject parameters;
-            return Gateway::Instance().Request<RESPONSETYPE>(propertyName, parameters, response);
-        }
-
-        template <typename RESPONSETYPE>
         static Firebolt::Error GetNL(const string& propertyName, const nlohmann::json& parameters, RESPONSETYPE& response)
         {
             return Gateway::Instance().Request(propertyName, parameters, response);
         }
 
-        template <typename PARAMETERS, typename RESPONSETYPE>
-        static Firebolt::Error Get(const string& propertyName, const PARAMETERS& parameters, RESPONSETYPE& response)
-        {
-            return Gateway::Instance().Request(propertyName, parameters, response);
-        }
-
         static Firebolt::Error SetNL(const string& propertyName, const nlohmann::json& parameters)
-        {
-            JsonObject responseType;
-            return Gateway::Instance().Request(propertyName, parameters, responseType);
-        }
-
-        template <typename PARAMETERS>
-        static Firebolt::Error Set(const string& propertyName, const PARAMETERS& parameters)
         {
             JsonObject responseType;
             return Gateway::Instance().Request(propertyName, parameters, responseType);

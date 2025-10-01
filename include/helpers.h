@@ -32,48 +32,6 @@
 
 namespace Firebolt::Helpers
 {
-class FIREBOLTSDK_EXPORT Parameters
-{
-public:
-    Parameters() = default;
-    Parameters(const std::vector<std::string>& value);
-    template <typename T> Parameters(const T& param)
-    {
-        object_.Set("value", WPEFramework::Core::JSON::Variant{param});
-    }
-    ~Parameters() = default;
-
-    Parameters& add(const char* paramName, const WPEFramework::Core::JSON::Variant& param);
-
-    template <typename T> Parameters& add(const char* paramName, const std::optional<T>& param)
-    {
-        if (param.has_value())
-        {
-            object_.Set(paramName, WPEFramework::Core::JSON::Variant{param.value()});
-        }
-        return *this;
-    }
-
-    template <typename JsonType, typename ParamType> Parameters& add(const char* paramName, const ParamType& param)
-    {
-        object_.Set(paramName, JsonType{param}.Data());
-        return *this;
-    }
-
-    template <typename JsonType, typename ParamType>
-    Parameters& add(const char* paramName, const std::optional<ParamType>& param)
-    {
-        if (param.has_value())
-        {
-            object_.Set(paramName, JsonType{param.value()}.Data());
-        }
-        return *this;
-    }
-    JsonObject operator()() const;
-
-private:
-    JsonObject object_;
-};
 
 template <typename JsonType, typename PropertyType>
 FIREBOLTSDK_EXPORT Result<PropertyType> get(const string& methodName)
