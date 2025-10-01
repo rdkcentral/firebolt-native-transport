@@ -30,7 +30,7 @@ Parameters::Parameters(const std::vector<std::string>& value)
     }
     WPEFramework::Core::JSON::Variant valueVariant;
     valueVariant.Array(valueArray);
-    object_.Set(_T("value"), valueVariant);
+    object_.Set("value", valueVariant);
 }
 
 Parameters& Parameters::add(const char* paramName, const WPEFramework::Core::JSON::Variant& param)

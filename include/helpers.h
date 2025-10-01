@@ -39,7 +39,7 @@ public:
     Parameters(const std::vector<std::string>& value);
     template <typename T> Parameters(const T& param)
     {
-        object_.Set(_T("value"), WPEFramework::Core::JSON::Variant{param});
+        object_.Set("value", WPEFramework::Core::JSON::Variant{param});
     }
     ~Parameters() = default;
 

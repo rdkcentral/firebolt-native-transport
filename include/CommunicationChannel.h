@@ -151,12 +151,12 @@ namespace FireboltSDK::Transport
                 {
                 case WPEFramework::Core::ERROR_ASYNC_ABORTED:
                 {
-                    message.Error.Text = _T("Pending a-sync call has been aborted");
+                    message.Error.Text = "Pending a-sync call has been aborted";
                     break;
                 }
                 case WPEFramework::Core::ERROR_TIMEDOUT:
                 {
-                    message.Error.Text = _T("Pending a-sync call has timed out");
+                    message.Error.Text = "Pending a-sync call has timed out";
                     break;
                 }
                 }
@@ -230,7 +230,7 @@ namespace FireboltSDK::Transport
             friend WPEFramework::Core::SingletonType<FactoryImpl>;
 
             FactoryImpl()
-                : _messageFactory(2), _watchDog(WPEFramework::Core::Thread::DefaultStackSize(), _T("TransportCleaner"))
+                : _messageFactory(2), _watchDog(WPEFramework::Core::Thread::DefaultStackSize(), "TransportCleaner")
             {
             }
 
@@ -273,7 +273,7 @@ namespace FireboltSDK::Transport
 
         public:
             ChannelImpl(CommunicationChannel *parent, const WPEFramework::Core::NodeId &remoteNode, const string &path, const string &query, const bool mask)
-                : BaseClass(5, FactoryImpl::Instance(), path, _T("JSON"), query, "", false, mask, false, remoteNode.AnyInterface(), remoteNode, 512, 512), _parent(*parent)
+                : BaseClass(5, FactoryImpl::Instance(), path, "JSON", query, "", false, mask, false, remoteNode.AnyInterface(), remoteNode, 512, 512), _parent(*parent)
             {
             }
             ~ChannelImpl() override = default;

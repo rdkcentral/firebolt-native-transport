@@ -126,7 +126,7 @@ namespace FireboltSDK::Transport
         }
 
     private:
-        static constexpr const TCHAR *PathPrefix = _T("/");
+        static constexpr const char *PathPrefix = "/";
 
     public:
         typedef std::function<void(const bool connected, const Firebolt::Error error)> Listener;

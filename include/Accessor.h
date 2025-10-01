@@ -73,16 +73,16 @@ namespace FireboltSDK::Transport {
             Config()
                 : WPEFramework::Core::JSON::Container()
                 , WaitTime(1000)
-                , LogLevel(_T("Info"))
+                , LogLevel("Info")
                 , WorkerPool()
-                , WsUrl(_T("ws://127.0.0.1:9998"))
+                , WsUrl("ws://127.0.0.1:9998")
                 , RPCv2(true)
             {
-                Add(_T("waitTime"), &WaitTime);
-                Add(_T("logLevel"), &LogLevel);
-                Add(_T("workerPool"), &WorkerPool);
-                Add(_T("wsUrl"), &WsUrl);
-                Add(_T("rpcV2"), &RPCv2);
+                Add("waitTime", &WaitTime);
+                Add("logLevel", &LogLevel);
+                Add("workerPool", &WorkerPool);
+                Add("wsUrl", &WsUrl);
+                Add("rpcV2", &RPCv2);
             }
 
         public:
