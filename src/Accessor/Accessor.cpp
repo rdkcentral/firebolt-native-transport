@@ -59,23 +59,6 @@ namespace FireboltSDK::Transport {
         _singleton = nullptr;
     }
 
-    Firebolt::Error Accessor::CreateEventHandler()
-    {
-         Event::Instance().Configure(_transport);
-         return Firebolt::Error::None;
-    }
-
-    Firebolt::Error Accessor::DestroyEventHandler()
-    {
-         Event::Dispose();
-         return Firebolt::Error::None;
-    }
-
-    Event& Accessor::GetEventManager()
-    {
-        return Event::Instance();
-    }
-
     Firebolt::Error Accessor::CreateTransport(const string& url, const uint32_t waitTime = DefaultWaitTime)
     {
         _transport_pp.Connect(url);

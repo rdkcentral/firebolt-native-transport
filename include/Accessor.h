@@ -24,7 +24,6 @@
 #include "Transport.h"
 #include "Transport_NEW.h"
 #include "Async.h"
-#include "Event.h"
 #include "Gateway.h"
 #include "Logger.h"
 
@@ -71,7 +70,6 @@ namespace FireboltSDK::Transport {
             if (status == Firebolt::Error::None) {
                 Async::Instance().Configure(_transport);
                 Gateway::Instance().TransportUpdated(&_transport_pp);
-                status = CreateEventHandler();
             }
             return status;
         }
@@ -104,11 +102,7 @@ namespace FireboltSDK::Transport {
             return _connected;
         }
 
-        Event& GetEventManager();
-
     private:
-        Firebolt::Error CreateEventHandler();
-        Firebolt::Error DestroyEventHandler();
         Firebolt::Error CreateTransport(const string& url, const uint32_t waitTime);
         Firebolt::Error DestroyTransport();
 

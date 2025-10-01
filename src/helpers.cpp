@@ -18,13 +18,16 @@
  */
 
 #include "helpers.h"
+#include "Gateway.h"
 
 namespace Firebolt::Helpers
 {
 
 Result<void> setNL(const string& methodName, const nlohmann::json& parameters)
 {
-    return Result<void>{FireboltSDK::Transport::Properties::SetNL(methodName, parameters)};
+    // JsonObject responseType;
+    WPEFramework::Core::JSON::VariantContainer responseType;
+    return Result<void>{FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters, responseType)};
 }
 
 Result<void> invokeNL(const string& methodName, const nlohmann::json& parameters)
@@ -42,7 +45,7 @@ void SubscriptionHelper::unsubscribeAll()
 {
     for (auto& subscription : subscriptions_)
     {
-        FireboltSDK::Transport::Event::Instance().Unsubscribe(subscription.second.eventName, &subscription.second);
+        FireboltSDK::Transport::Gateway::Instance().Unsubscribe(subscription.second.eventName);
     }
     subscriptions_.clear();
 }
@@ -55,7 +58,7 @@ Result<void> SubscriptionHelper::unsubscribe(SubscriptionId id)
     {
         return Result<void>{Error::General};
     }
-    auto errorStatus{FireboltSDK::Transport::Event::Instance().Unsubscribe(it->second.eventName, &it->second)};
+    auto errorStatus{FireboltSDK::Transport::Gateway::Instance().Unsubscribe(it->second.eventName)};
     subscriptions_.erase(it);
     return Result<void>{errorStatus};
 }

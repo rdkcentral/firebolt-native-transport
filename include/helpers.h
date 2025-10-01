@@ -37,7 +37,8 @@ template <typename JsonType, typename PropertyType>
 FIREBOLTSDK_EXPORT Result<PropertyType> get(const string& methodName)
 {
     JsonType jsonResult;
-    Error status = FireboltSDK::Transport::Properties::GetNL(methodName, jsonResult);
+    nlohmann::json parameters = nlohmann::json({});
+    Error status = FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters, jsonResult);
     if (status == Error::None)
     {
         return Result<PropertyType>{jsonResult.Value()};
@@ -49,7 +50,7 @@ template <typename JsonType, typename PropertyType>
 FIREBOLTSDK_EXPORT Result<PropertyType> get(const string& methodName, const nlohmann::json& parameters)
 {
     JsonType jsonResult;
-    Error status = FireboltSDK::Transport::Properties::GetNL(methodName, parameters, jsonResult);
+    Error status = FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters, jsonResult);
     if (status == Error::None)
     {
         return Result<PropertyType>{jsonResult.Value()};
@@ -107,8 +108,7 @@ protected:
         subscriptions_[currentId_] = SubscriptionData{eventName, std::move(notification)};
         JsonObject jsonParameters;
         void* notificationPtr = reinterpret_cast<void*>(&subscriptions_[currentId_]);
-        Error status =
-            FireboltSDK::Transport::Event::Instance().Subscribe<JsonType>(eventName, jsonParameters,
+        Error status = FireboltSDK::Transport::Gateway::Instance().Subscribe<JsonType>(eventName, jsonParameters,
                                                                onPropertyChangedCallback<JsonType, PropertyType>,
                                                                notificationPtr, nullptr);
         if (Error::None == status)

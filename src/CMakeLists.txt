@@ -25,7 +25,6 @@ add_library(${TARGET} ${FIREBOLT_LIBRARY_TYPE}
     Logger/Logger.cpp
     Transport/Transport.cpp
     Accessor/Accessor.cpp
-    Event/Event.cpp
     Async/Async.cpp
 )
 

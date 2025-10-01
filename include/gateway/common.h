@@ -31,6 +31,6 @@ struct Config
 {
     static constexpr uint64_t watchdogThreshold_ms = 3000;
     static constexpr uint64_t watchdogCycle_ms = 500;
-    static constexpr uint32_t DefaultWaitTime = WPEFramework::Core::infinite;
+    static constexpr uint32_t DefaultWaitTime = -1;
 };
 } // namespace Firebolt::Transport
