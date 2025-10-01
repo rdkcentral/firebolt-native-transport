@@ -27,18 +27,27 @@ namespace FireboltSDK::Transport {
     Accessor::Accessor(const string& configLine)
         : _workerPool()
         , _transport(nullptr)
-        , _config()
     {
         ASSERT(_singleton == nullptr);
         _singleton = this;
-        _config.FromString(configLine);
 
-        Logger::SetLogLevel(WPEFramework::Core::EnumerateType<Logger::LogLevel>(_config.LogLevel.Value().c_str()).Value());
+        _config["WaitTime"] = DefaultWaitTime;
+        _config["LogLevel"] = "Info";
+        _config["WsUrl"] = "ws://127.0.0.1:9998";
+        _config["RPCv2"] = true;
 
-        FIREBOLT_LOG_INFO(Logger::Category::OpenRPC, Logger::Module<Accessor>(), "Url = %s", _config.WsUrl.Value().c_str());
-        _workerPool = WPEFramework::Core::ProxyType<WorkerPoolImplementation>::Create(_config.WorkerPool.ThreadCount.Value(), _config.WorkerPool.StackSize.Value(), _config.WorkerPool.QueueSize.Value());
-        WPEFramework::Core::WorkerPool::Assign(&(*_workerPool));
-        _workerPool->Run();
+        _config.merge_patch(nlohmann::json::parse(configLine));
+
+        FireboltSDK::JSON::EnumType<Logger::LogLevel> logLevels = {
+            { "Error", Logger::LogLevel::Error },
+            { "Warning", Logger::LogLevel::Warning },
+            { "Info", Logger::LogLevel::Info },
+            { "Debug", Logger::LogLevel::Debug }
+        };
+
+        Logger::SetLogLevel(logLevels[_config["LogLevel"]]);
+
+        FIREBOLT_LOG_INFO(Logger::Category::OpenRPC, Logger::Module<Accessor>(), "Url = %s", _config["WsUrl"].get<std::string>().c_str());
     }
 
     Accessor::~Accessor()

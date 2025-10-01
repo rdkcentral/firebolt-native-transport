@@ -41,57 +41,6 @@ namespace FireboltSDK::Transport {
         Accessor(const string& configLine);
 
     public:
-        class EXTERNAL Config : public WPEFramework::Core::JSON::Container {
-        public:
-            Config(const Config&) = delete;
-            Config& operator=(const Config&) = delete;
-
-            class WorkerPoolConfig : public WPEFramework::Core::JSON::Container {
-                public:
-                    WorkerPoolConfig& operator=(const WorkerPoolConfig&);
-
-                    WorkerPoolConfig()
-                        : WPEFramework::Core::JSON::Container()
-                        , QueueSize(8)
-                        , ThreadCount(3)
-                        , StackSize(WPEFramework::Core::Thread::DefaultStackSize())
-                    {
-                        Add("queueSize", &QueueSize);
-                        Add("threadCount", &ThreadCount);
-                        Add("stackSize", &StackSize);
-                    }
-
-                    virtual ~WorkerPoolConfig() = default;
-
-                public:
-                    WPEFramework::Core::JSON::DecUInt32 QueueSize;
-                    WPEFramework::Core::JSON::DecUInt32 ThreadCount;
-                    WPEFramework::Core::JSON::DecUInt32 StackSize;
-                };
-
-
-            Config()
-                : WPEFramework::Core::JSON::Container()
-                , WaitTime(1000)
-                , LogLevel("Info")
-                , WorkerPool()
-                , WsUrl("ws://127.0.0.1:9998")
-                , RPCv2(true)
-            {
-                Add("waitTime", &WaitTime);
-                Add("logLevel", &LogLevel);
-                Add("workerPool", &WorkerPool);
-                Add("wsUrl", &WsUrl);
-                Add("rpcV2", &RPCv2);
-            }
-
-        public:
-            WPEFramework::Core::JSON::DecUInt32 WaitTime;
-            WPEFramework::Core::JSON::String LogLevel;
-            WorkerPoolConfig WorkerPool;
-            WPEFramework::Core::JSON::String WsUrl;
-            WPEFramework::Core::JSON::Boolean RPCv2;
-        };
 
         Accessor(const Accessor&) = delete;
         Accessor& operator= (const Accessor&) = delete;
@@ -118,7 +67,7 @@ namespace FireboltSDK::Transport {
         Firebolt::Error Connect(const Transport<WPEFramework::Core::JSON::IElement>::Listener& listener)
         {
             RegisterConnectionChangeListener(listener);
-            Firebolt::Error status = CreateTransport(_config.WsUrl.Value().c_str(), _config.WaitTime.Value());
+            Firebolt::Error status = CreateTransport(_config["WsUrl"], _config["WaitTime"]);
             if (status == Firebolt::Error::None) {
                 Async::Instance().Configure(_transport);
                 Gateway::Instance().TransportUpdated(_transport, &_transport_pp);
@@ -172,7 +121,7 @@ namespace FireboltSDK::Transport {
         Transport<WPEFramework::Core::JSON::IElement>* _transport;
         Transport_PP _transport_pp;
         static Accessor* _singleton;
-        Config _config;
+        nlohmann::json _config;
 
         bool _connected = false;
         Transport<WPEFramework::Core::JSON::IElement>::Listener _connectionChangeListener = nullptr;
