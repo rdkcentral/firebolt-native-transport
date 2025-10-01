@@ -51,12 +51,27 @@ inline std::string ToString(const EnumType<T>& enumType, const T& value)
 template <typename T>
 class NL_Json_Basic {
 public:
-    virtual ~NL_Json_Basic() = default;
     virtual void FromJson(const nlohmann::json& json) = 0;
     T virtual Value() const = 0;
 
     void FromString(const std::string& str) { FromJson(nlohmann::json::parse(str)); }
 };
+
+template <typename T>
+class BasicType : public NL_Json_Basic<T>
+{
+public:
+    void FromJson(const nlohmann::json& json) override { value_ = json.get<T>(); }
+    T Value() const override { return value_; }
+private:
+    T value_;
+};
+
+using String = BasicType<std::string>;
+using Boolean = BasicType<bool>;
+using Float = BasicType<float>;
+using Unsiged = BasicType<uint32_t>;
+using Integer = BasicType<int32_t>;
 
 template <typename T1, typename T2>
 class NL_Json_Array : public NL_Json_Basic<std::vector<T2>>
@@ -76,25 +91,6 @@ public:
     }
 private:
     std::vector<T2> value_;
-};
-
-class String : public NL_Json_Basic<std::string>
-{
-public:
-    void FromJson(const nlohmann::json& json) override { value_ = json.get<std::string>(); }
-    std::string Value() const override { return value_; }
-
-private:
-    std::string value_;
-};
-
-class Boolean : public NL_Json_Basic<bool>
-{
-public:
-    void FromJson(const nlohmann::json& json) override { value_ = json.get<bool>(); }
-    bool Value() const override { return value_; }
-private:
-    bool value_;
 };
 
 class WPE_String : public WPEFramework::Core::JSON::String

@@ -99,12 +99,9 @@ public:
     {
         Firebolt::Error status = Firebolt::Error::General;
 
-        std::function<void(void* usercb, const void* userdata, void* parameters)> actualCallback = callback;
-        DispatchFunctionEvent implementation = [actualCallback](void* usercb, const void* userdata, const string& parameters) {
-            WPEFramework::Core::ProxyType<RESULT>* inbound = new WPEFramework::Core::ProxyType<RESULT>();
-            *inbound = WPEFramework::Core::ProxyType<RESULT>::Create();
-            (*inbound)->FromString(parameters);
-            actualCallback(usercb, userdata, static_cast<void*>(inbound));
+        std::function<void(void* usercb, const void* userdata, const std::string& parameters)> actualCallback = callback;
+        DispatchFunctionEvent implementation = [actualCallback](void* usercb, const void* userdata, const std::string& parameters) {
+            actualCallback(usercb, userdata, nlohmann::json::parse(parameters));
         };
         CallbackDataEvent callbackData = {implementation, usercb, userdata};
 

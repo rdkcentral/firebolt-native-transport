@@ -69,7 +69,7 @@ void SubscriptionHelper::unsubscribeAll()
     subscriptions_.clear();
 }
 
-Result<void> SubscriptionHelper::unsubscribe(uint64_t id)
+Result<void> SubscriptionHelper::unsubscribe(SubscriptionId id)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     auto it = subscriptions_.find(id);
