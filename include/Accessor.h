@@ -20,10 +20,7 @@
 
 #include "Portability.h"
 #include "Module.h"
-#include "WorkerPool.h"
-#include "Transport.h"
 #include "Transport_NEW.h"
-#include "Async.h"
 #include "Gateway.h"
 #include "Logger.h"
 
@@ -31,6 +28,9 @@
 #include <mutex>
 
 namespace FireboltSDK::Transport {
+
+    using OnConnectionChanged = std::function<void(const bool connected, const Firebolt::Error error)>;
+
     class FIREBOLTSDK_EXPORT Accessor {
     private:
         static constexpr uint8_t JSONVersion = 2;
@@ -63,18 +63,18 @@ namespace FireboltSDK::Transport {
             }
         }
 
-        Firebolt::Error Connect(const Transport<WPEFramework::Core::JSON::IElement>::Listener& listener)
+        Firebolt::Error Connect(const OnConnectionChanged listener)
         {
             RegisterConnectionChangeListener(listener);
             Firebolt::Error status = CreateTransport(_config["WsUrl"], _config["WaitTime"]);
             if (status == Firebolt::Error::None) {
-                Async::Instance().Configure(_transport);
                 Gateway::Instance().TransportUpdated(&_transport_pp);
             }
+            _connectionChangeListener(true, Firebolt::Error::None);
             return status;
         }
 
-        void RegisterConnectionChangeListener(const Transport<WPEFramework::Core::JSON::IElement>::Listener& listener)
+        void RegisterConnectionChangeListener(const OnConnectionChanged listener)
         {
             _connectionChangeListener = listener;
         }
@@ -86,11 +86,6 @@ namespace FireboltSDK::Transport {
 
         Firebolt::Error Disconnect()
         {
-            if (_transport == nullptr) {
-                return Firebolt::Error::None;
-            }
-
-            Async::Dispose();
             Gateway::Instance().TransportUpdated(nullptr);
             DestroyTransport();
 
@@ -111,13 +106,11 @@ namespace FireboltSDK::Transport {
     private:
         static constexpr uint32_t DefaultWaitTime = 10000;
 
-        WPEFramework::Core::ProxyType<WorkerPoolImplementation> _workerPool;
-        Transport<WPEFramework::Core::JSON::IElement>* _transport;
         Transport_PP _transport_pp;
         static Accessor* _singleton;
         nlohmann::json _config;
 
         bool _connected = false;
-        Transport<WPEFramework::Core::JSON::IElement>::Listener _connectionChangeListener = nullptr;
+        OnConnectionChanged _connectionChangeListener = nullptr;
     };
 }

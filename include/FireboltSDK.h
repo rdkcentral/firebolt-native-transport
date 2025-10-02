@@ -20,8 +20,5 @@
 #pragma once
 
 #include "Accessor.h"
-#include "Async.h"
 #include "Logger.h"
-#include "Properties.h"
-#include "Transport.h"
 #include "TypesPriv.h"

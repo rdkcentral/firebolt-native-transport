@@ -23,9 +23,7 @@ file(GLOB SOURCES *.cpp)
 add_library(${TARGET} ${FIREBOLT_LIBRARY_TYPE}
     ${SOURCES}
     Logger/Logger.cpp
-    Transport/Transport.cpp
     Accessor/Accessor.cpp
-    Async/Async.cpp
 )
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -46,8 +44,6 @@ endif ()
 
 target_link_libraries(${TARGET}
     PRIVATE
-        WPEFrameworkWebSocket::WPEFrameworkWebSocket
-        WPEFrameworkCore::WPEFrameworkCore
         nlohmann_json::nlohmann_json
 )
 

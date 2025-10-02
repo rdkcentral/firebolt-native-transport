@@ -26,7 +26,6 @@
 #include "error.h"
 
 #include "TypesPriv.h"
-#include "Transport.h"
 #include "Transport_NEW.h"
 
 #include "gateway/common.h"
@@ -55,7 +54,7 @@ private:
     bool is_set_ = false;
 };
 
-class GatewayImpl : public ITransportReceiver, ITransportReceiver_PP
+class GatewayImpl : public ITransportReceiver_PP
 {
     Config config;
     Client client;
@@ -95,10 +94,6 @@ public:
         } else {
             client.Response(message);
         }
-    }
-
-    virtual void Receive(const WPEFramework::Core::JSONRPC::Message& message) override
-    {
     }
 
     template <typename RESPONSE>

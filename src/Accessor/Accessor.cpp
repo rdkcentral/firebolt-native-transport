@@ -25,8 +25,6 @@ namespace FireboltSDK::Transport {
     Accessor* Accessor::_singleton = nullptr;
 
     Accessor::Accessor(const string& configLine)
-        : _workerPool()
-        , _transport(nullptr)
     {
         ASSERT(_singleton == nullptr);
         _singleton = this;
@@ -52,9 +50,6 @@ namespace FireboltSDK::Transport {
 
     Accessor::~Accessor()
     {
-        WPEFramework::Core::IWorkerPool::Assign(nullptr);
-        _workerPool->Stop();
-
         ASSERT(_singleton != nullptr);
         _singleton = nullptr;
     }
@@ -63,25 +58,11 @@ namespace FireboltSDK::Transport {
     {
         _transport_pp.Connect(url);
 
-        if (_transport != nullptr) {
-            delete _transport;
-        }
-
-        _transport = new Transport<WPEFramework::Core::JSON::IElement>(
-                static_cast<WPEFramework::Core::URL>(url),
-                waitTime,
-                std::bind(&Accessor::ConnectionChanged, this, std::placeholders::_1, std::placeholders::_2));
-
-        ASSERT(_transport != nullptr);
-        return ((_transport != nullptr) ? Firebolt::Error::None : Firebolt::Error::Timedout);
+        return Firebolt::Error::None;
     }
 
     Firebolt::Error Accessor::DestroyTransport()
     {
-        if (_transport != nullptr) {
-            delete _transport;
-            _transport = nullptr;
-        }
         return Firebolt::Error::None;
     }
 
