@@ -19,10 +19,6 @@
 
 #pragma once
 
-#ifndef MODULE_NAME
-#define MODULE_NAME OpenRPCNativeSDK
-#endif
-#include <core/core.h>
 #include "error.h"
 
 #include "Portability.h"
@@ -56,16 +52,15 @@ public:
 
     void TransportUpdated(Transport_PP* transportPP);
 
-    template <typename RESPONSE>
-    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, RESPONSE &response)
+    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response)
     {
         return implementation->Request(method, parameters, response);
     }
 
     template <typename RESULT, typename CALLBACK>
-    Firebolt::Error Subscribe(const string& event, JsonObject& parameters, const CALLBACK& callback, void* usercb, const void* userdata, bool prioritize = false)
+    Firebolt::Error Subscribe(const std::string& event, const CALLBACK& callback, void* usercb, const void* userdata, bool prioritize = false)
     {
-        return implementation->Subscribe<RESULT>(event, parameters, callback, usercb, userdata, prioritize);
+        return implementation->Subscribe<RESULT>(event, callback, usercb, userdata, prioritize);
     }
 
     Firebolt::Error Unsubscribe(const std::string& event)
@@ -73,10 +68,10 @@ public:
         return implementation->Unsubscribe(event);
     }
 
-    template <typename RESPONSE, typename PARAMETERS, typename CALLBACK>
-    Firebolt::Error RegisterProviderInterface(const std::string &method, const PARAMETERS &parameters, const CALLBACK& callback, void* usercb)
+    template <typename RESPONSE, typename CALLBACK>
+    Firebolt::Error RegisterProviderInterface(const std::string &method, const CALLBACK& callback, void* usercb)
     {
-        return implementation->RegisterProviderInterface<RESPONSE>(method, parameters, callback, usercb);
+        return implementation->RegisterProviderInterface<RESPONSE>(method, callback, usercb);
     }
 
     Firebolt::Error UnregisterProviderInterface(const std::string &interface, const std::string &method, void* usercb)

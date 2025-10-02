@@ -34,41 +34,32 @@ namespace Firebolt::Helpers
 {
 
 template <typename JsonType, typename PropertyType>
-FIREBOLTSDK_EXPORT Result<PropertyType> get(const string& methodName)
+FIREBOLTSDK_EXPORT Result<PropertyType> get(const std::string& methodName, const nlohmann::json& parameters = nlohmann::json({})) 
 {
-    JsonType jsonResult;
-    nlohmann::json parameters = nlohmann::json({});
-    Error status = FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters, jsonResult);
+    nlohmann::json result;
+    Error status = FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters, result);
     if (status == Error::None)
     {
+        JsonType jsonResult;
+        jsonResult.FromJson(result);
         return Result<PropertyType>{jsonResult.Value()};
     }
     return Result<PropertyType>{status};
 }
 
-template <typename JsonType, typename PropertyType>
-FIREBOLTSDK_EXPORT Result<PropertyType> get(const string& methodName, const nlohmann::json& parameters)
-{
-    JsonType jsonResult;
-    Error status = FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters, jsonResult);
-    if (status == Error::None)
-    {
-        return Result<PropertyType>{jsonResult.Value()};
-    }
-    return Result<PropertyType>{status};
-}
-
-FIREBOLTSDK_EXPORT Result<void> invokeNL(const string& methodName, const nlohmann::json& parameters);
-FIREBOLTSDK_EXPORT Result<void> setNL(const string& methodName, const nlohmann::json& parameters);
+FIREBOLTSDK_EXPORT Result<void> invokeNL(const std::string& methodName, const nlohmann::json& parameters);
+FIREBOLTSDK_EXPORT Result<void> setNL(const std::string& methodName, const nlohmann::json& parameters);
 
 template <typename JsonType, typename PropertyType>
-FIREBOLTSDK_EXPORT inline Result<PropertyType> invokeNL(const string& methodName, const nlohmann::json& parameters = {})
+FIREBOLTSDK_EXPORT inline Result<PropertyType> invokeNL(const std::string& methodName, const nlohmann::json& parameters = {})
 {
-    JsonType jsonResult;
     nlohmann::json params;
-    Error status = FireboltSDK::Transport::Gateway::Instance().Request(methodName, params, jsonResult);
+    nlohmann::json result;
+    Error status = FireboltSDK::Transport::Gateway::Instance().Request(methodName, params, result);
     if (status == Error::None)
     {
+        JsonType jsonResult;
+        jsonResult.FromJson(result);
         return Result<PropertyType>{jsonResult.Value()};
     }
     return Result<PropertyType>{status};
@@ -76,7 +67,7 @@ FIREBOLTSDK_EXPORT inline Result<PropertyType> invokeNL(const string& methodName
 
 struct SubscriptionData
 {
-    string eventName;
+    std::string eventName;
     std::any notification;
 };
 
@@ -102,13 +93,12 @@ protected:
 
     Result<void> unsubscribe(SubscriptionId id);
     template <typename JsonType, typename PropertyType>
-    Result<SubscriptionId> subscribe(const string& eventName, std::function<void(PropertyType)>&& notification)
+    Result<SubscriptionId> subscribe(const std::string& eventName, std::function<void(PropertyType)>&& notification)
     {
         std::lock_guard<std::mutex> lock(mutex_);
         subscriptions_[currentId_] = SubscriptionData{eventName, std::move(notification)};
-        JsonObject jsonParameters;
         void* notificationPtr = reinterpret_cast<void*>(&subscriptions_[currentId_]);
-        Error status = FireboltSDK::Transport::Gateway::Instance().Subscribe<JsonType>(eventName, jsonParameters,
+        Error status = FireboltSDK::Transport::Gateway::Instance().Subscribe<JsonType>(eventName,
                                                                onPropertyChangedCallback<JsonType, PropertyType>,
                                                                notificationPtr, nullptr);
         if (Error::None == status)

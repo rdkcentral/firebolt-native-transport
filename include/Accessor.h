@@ -19,7 +19,6 @@
 #pragma once
 
 #include "Portability.h"
-#include "Module.h"
 #include "Transport_NEW.h"
 #include "Gateway.h"
 #include "Logger.h"
@@ -37,7 +36,7 @@ namespace FireboltSDK::Transport {
 
     private:
         //Singleton
-        Accessor(const string& configLine);
+        Accessor(const std::string& configLine);
 
     public:
 
@@ -46,17 +45,14 @@ namespace FireboltSDK::Transport {
         Accessor() = delete;
         ~Accessor();
 
-        static Accessor& Instance(const string& configLine = "")
+        static Accessor& Instance(const std::string& configLine = "")
         {
             static Accessor *instance = new Accessor(configLine);
-            ASSERT(instance != nullptr);
             return *instance;
         }
 
         static void Dispose()
         {
-            ASSERT(_singleton != nullptr);
-
             if (_singleton != nullptr) {
                 delete _singleton;
                 _singleton = nullptr;
@@ -98,7 +94,7 @@ namespace FireboltSDK::Transport {
         }
 
     private:
-        Firebolt::Error CreateTransport(const string& url, const uint32_t waitTime);
+        Firebolt::Error CreateTransport(const std::string& url, const uint32_t waitTime);
         Firebolt::Error DestroyTransport();
 
         void ConnectionChanged(const bool connected, const Firebolt::Error error);

@@ -19,10 +19,6 @@
 
 #pragma once
 
-#ifndef MODULE_NAME
-#define MODULE_NAME OpenRPCNativeSDK
-#endif
-#include <core/core.h>
 #include "error.h"
 
 #include "TypesPriv.h"
@@ -37,35 +33,12 @@
 
 namespace FireboltSDK::Transport
 {
-class ListeningResponse : public FireboltSDK::JSON::NL_Json_Basic<bool>
-{
-public:
-    void FromJson(const nlohmann::json& json) override {
-        if (json.contains("listening")) {
-            value_ = json["listening"].get<bool>();
-            is_set_ = true;
-        }
-    }
-    bool Value() const override { return value_; }
-    bool isSet() const { return is_set_; }
-    bool isListening() const { return value_; }
-private:
-    bool value_;
-    bool is_set_ = false;
-};
-
 class GatewayImpl : public ITransportReceiver_PP
 {
     Config config;
     Client client;
     Server server;
     Transport_PP* transport_pp;
-
-    std::string jsonObject2String(const JsonObject &obj) {
-        std::string s;
-        obj.ToString(s);
-        return s;
-    }
 
 public:
     GatewayImpl()
@@ -96,8 +69,7 @@ public:
         }
     }
 
-    template <typename RESPONSE>
-    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, RESPONSE &response)
+    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response)
     {
         if (transport_pp == nullptr) {
             return Firebolt::Error::NotConnected;
@@ -106,18 +78,18 @@ public:
     }
 
     template <typename RESULT, typename CALLBACK>
-    Firebolt::Error Subscribe(const string& event, JsonObject& parameters, const CALLBACK& callback, void* usercb, const void* userdata, bool prioritize = false)
+    Firebolt::Error Subscribe(const std::string& event, const CALLBACK& callback, void* usercb, const void* userdata, bool prioritize = false)
     {
-        Firebolt::Error status = server.Subscribe<RESULT>(event, parameters, callback, usercb, userdata);
+        Firebolt::Error status = server.Subscribe<RESULT>(event, callback, usercb, userdata);
         if (status != Firebolt::Error::None) {
             return status;
         }
 
-        nlohmann::json params = nlohmann::json::parse(jsonObject2String(parameters));
+        nlohmann::json params;
         params["listen"] = true;
-        ListeningResponse response;
-        status = client.Request(event, params, response);
-        if (status == Firebolt::Error::None && (!response.isSet() || !response.isListening())) {
+        nlohmann::json result;
+        status = client.Request(event, params, result);
+        if (status == Firebolt::Error::None && (!result.contains("listening") || !result["listening"].get<bool>())) {
             status == Firebolt::Error::General;
         }
         if (status != Firebolt::Error::None) {
@@ -126,7 +98,7 @@ public:
         return status;
     }
 
-    Firebolt::Error Unsubscribe(const string& event)
+    Firebolt::Error Unsubscribe(const std::string& event)
     {
         Firebolt::Error status = server.Unsubscribe(event);
         if (status != Firebolt::Error::None) {
@@ -134,18 +106,18 @@ public:
         }
         nlohmann::json params;
         params["listen"] = false;
-        ListeningResponse response;
-        status = client.Request(event, params, response);
-        if (status == Firebolt::Error::None && (!response.isSet() || response.isListening())) {
+        nlohmann::json result;
+        status = client.Request(event, params, result);
+        if (status == Firebolt::Error::None && (!result.contains("listening") || result["listening"].get<bool>())) {
             status == Firebolt::Error::General;
         }
         return status;
     }
 
-    template <typename RESPONSE, typename PARAMETERS, typename CALLBACK>
-    Firebolt::Error RegisterProviderInterface(const std::string &method, const PARAMETERS &parameters, const CALLBACK& callback, void* usercb)
+    template <typename RESPONSE, typename CALLBACK>
+    Firebolt::Error RegisterProviderInterface(const std::string &method, const CALLBACK& callback, void* usercb)
     {
-        Firebolt::Error status = server.RegisterProviderInterface<RESPONSE>(method, parameters, callback, usercb);
+        Firebolt::Error status = server.RegisterProviderInterface<RESPONSE>(method, callback, usercb);
         if (status != Firebolt::Error::None) {
             return status;
         }

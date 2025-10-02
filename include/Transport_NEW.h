@@ -137,7 +137,7 @@ public:
         return ++id_counter_;
     }
 
-    Firebolt::Error Send(const string &method, const nlohmann::json &params, const unsigned id)
+    Firebolt::Error Send(const std::string &method, const nlohmann::json &params, const unsigned id)
     {
         if (!connected_) {
             return Firebolt::Error::NotConnected;

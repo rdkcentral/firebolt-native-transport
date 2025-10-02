@@ -27,14 +27,12 @@ Gateway& Gateway::Instance()
 {
     if (instance == nullptr) {
         instance = new Gateway(std::make_unique<GatewayImpl>());
-        ASSERT(instance != nullptr);
     }
     return *instance;
 }
 
 void Gateway::Dispose()
 {
-    ASSERT(instance != nullptr);
     if (instance != nullptr) {
         delete instance;
         instance = nullptr;

@@ -19,10 +19,6 @@
 
 #pragma once
 
-#ifndef MODULE_NAME
-#define MODULE_NAME OpenRPCNativeSDK
-#endif
-#include <core/core.h>
 #include "error.h"
 
 #include "Transport_NEW.h"
@@ -51,11 +47,10 @@ class Server
     EventMap eventMap;
     mutable std::mutex eventMap_mtx;
 
-    using DispatchFunctionProvider = std::function<std::string(const std::string &parameters, void*)>;
+    using DispatchFunctionProvider = std::function<std::string(const nlohmann::json &parameters, void*)>;
 
     struct Method {
         std::string name;
-        JsonObject parameters;
         DispatchFunctionProvider lambda;
         void* usercb;
     };
@@ -94,7 +89,7 @@ public:
     }
 
     template <typename RESULT, typename CALLBACK>
-    Firebolt::Error Subscribe(const std::string& event, JsonObject& parameters, const CALLBACK& callback, void* usercb, const void* userdata)
+    Firebolt::Error Subscribe(const std::string& event, const CALLBACK& callback, void* usercb, const void* userdata)
     {
         Firebolt::Error status = Firebolt::Error::General;
 
@@ -161,8 +156,8 @@ public:
         }
     }
 
-    template <typename RESPONSE, typename PARAMETERS, typename CALLBACK>
-    Firebolt::Error RegisterProviderInterface(const std::string &fullMethod, const PARAMETERS &parameters, const CALLBACK &callback, void* usercb)
+    template <typename RESPONSE, typename CALLBACK>
+    Firebolt::Error RegisterProviderInterface(const std::string &fullMethod, const CALLBACK &callback, void* usercb)
     {
         uint32_t waitTime = config.DefaultWaitTime;
 
@@ -174,12 +169,9 @@ public:
             method.erase(0, 2); // erase "on"
         }
 
-        std::function<std::string(void* usercb, void* params)> actualCallback = callback;
-        DispatchFunctionProvider lambda = [actualCallback, method, waitTime](const std::string &params, void* usercb) {
-            WPEFramework::Core::ProxyType<RESPONSE>* jsonParams = new WPEFramework::Core::ProxyType<RESPONSE>();
-            *jsonParams = WPEFramework::Core::ProxyType<RESPONSE>::Create();
-            (*jsonParams)->FromString(params);
-            return actualCallback(usercb, jsonParams);
+        std::function<std::string(void* usercb, const nlohmann::json &params)> actualCallback = callback;
+        DispatchFunctionProvider lambda = [actualCallback, method, waitTime](const nlohmann::json& params, void* usercb) {
+            return actualCallback(usercb, params);
         };
         std::lock_guard lck(providers_mtx);
         if (providers.find(interface) == providers.end()) {

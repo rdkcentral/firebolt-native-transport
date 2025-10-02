@@ -19,10 +19,6 @@
 
 #pragma once
 
-#ifndef MODULE_NAME
-#define MODULE_NAME OpenRPCNativeSDK
-#endif
-#include <core/core.h>
 #include "error.h"
 
 #include "Transport_NEW.h"
@@ -118,19 +114,12 @@ public:
     }
 
 #ifdef UNIT_TEST
-    template <typename RESPONSE>
-    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, RESPONSE &response)
-    {
-        return Firebolt::Error::General;;
-    }
-    template <typename RESPONSE>
-    Firebolt::Error Request(const std::string &method, const JsonObject &parameters, RESPONSE &response)
+    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response)
     {
         return Firebolt::Error::General;;
     }
 #else
-    template <typename RESPONSE>
-    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, RESPONSE &response)
+    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response)
     {
         if (transport_pp == nullptr) {
             return Firebolt::Error::NotConnected;
@@ -142,7 +131,6 @@ public:
             queue[id] = c;
         }
 
-        printf("TB] II request(new)\n");
         Firebolt::Error result = transport_pp->Send(method, parameters, id);
         if (result == Firebolt::Error::None) {
             {
@@ -154,8 +142,7 @@ public:
                 }
             }
             if (c->error == Firebolt::Error::None) {
-                response.FromString(c->response);
-                // response.FromJson(c->response_json);
+                response = nlohmann::json::parse(c->response);
             } else {
                 result = c->error;
             }

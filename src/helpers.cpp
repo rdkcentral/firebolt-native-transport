@@ -23,16 +23,15 @@
 namespace Firebolt::Helpers
 {
 
-Result<void> setNL(const string& methodName, const nlohmann::json& parameters)
+Result<void> setNL(const std::string& methodName, const nlohmann::json& parameters)
 {
-    // JsonObject responseType;
-    WPEFramework::Core::JSON::VariantContainer responseType;
-    return Result<void>{FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters, responseType)};
+    nlohmann::json result;
+    return Result<void>{FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters, result)};
 }
 
-Result<void> invokeNL(const string& methodName, const nlohmann::json& parameters)
+Result<void> invokeNL(const std::string& methodName, const nlohmann::json& parameters)
 {
-    WPEFramework::Core::JSON::VariantContainer result;
+    nlohmann::json result;
     return Result<void>{FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters, result)};
 }
 

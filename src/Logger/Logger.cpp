@@ -16,11 +16,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "Module.h"
 #include "error.h"
 #include "Logger.h"
 #include <stdio.h>
 #include <unistd.h>
+#include <cstdarg>
+#include <map>
+#include <chrono>
+#include <ctime>
+#include <sys/time.h>
+#include <cstring>
 
 #ifdef ENABLE_SYSLOG
 #define LOG_MESSAGE(message) \
@@ -30,45 +35,24 @@
     do { fprintf(stderr, "%s", message); fflush(stdout); } while (0)
 #endif
 
-namespace WPEFramework {
-
-ENUM_CONVERSION_BEGIN(FireboltSDK::Transport::Logger::LogLevel)
-
-    { FireboltSDK::Transport::Logger::LogLevel::Error, _TXT("Error") },
-    { FireboltSDK::Transport::Logger::LogLevel::Warning, _TXT("Warning") },
-    { FireboltSDK::Transport::Logger::LogLevel::Info, _TXT("Info") },
-    { FireboltSDK::Transport::Logger::LogLevel::Debug, _TXT("Debug") },
-
-ENUM_CONVERSION_END(FireboltSDK::Transport::Logger::LogLevel)
-
-ENUM_CONVERSION_BEGIN(FireboltSDK::Transport::Logger::Category)
-
-    { FireboltSDK::Transport::Logger::Category::OpenRPC, _TXT("FireboltSDK::OpenRPC") },
-    { FireboltSDK::Transport::Logger::Category::Core, _TXT("FireboltSDK::Core") },
-    { FireboltSDK::Transport::Logger::Category::Manage, _TXT("FireboltSDK::Manage") },
-    { FireboltSDK::Transport::Logger::Category::Discovery, _TXT("FireboltSDK::Discovery") },
-    { FireboltSDK::Transport::Logger::Category::PlayerProvider, _TXT("FireboltSDK::PlayerProvider") },
-    { FireboltSDK::Transport::Logger::Category::PlayerProvider, _TXT("FireboltSDK::PlayerManager") },
-
-ENUM_CONVERSION_END(FireboltSDK::Transport::Logger::Category)
-
-}
-
 namespace FireboltSDK::Transport {
     /* static */  Logger::LogLevel Logger::_logLevel = Logger::LogLevel::Error;
 
-    Firebolt::Error Logger::SetLogLevel(Logger::LogLevel logLevel)
+std::map<FireboltSDK::Transport::Logger::LogLevel, const char*> _logLevelNames = {
+    { FireboltSDK::Transport::Logger::LogLevel::Error, "Error" },
+    { FireboltSDK::Transport::Logger::LogLevel::Warning, "Warning" },
+    { FireboltSDK::Transport::Logger::LogLevel::Info, "Info" },
+    { FireboltSDK::Transport::Logger::LogLevel::Debug, "Debug" },
+};
+
+    void Logger::SetLogLevel(Logger::LogLevel logLevel)
     {
-        ASSERT(logLevel < Logger::LogLevel::MaxLevel);
-        Firebolt::Error status = Firebolt::Error::General;
         if (logLevel < Logger::LogLevel::MaxLevel) {
             _logLevel = logLevel;
-            status = Firebolt::Error::None;
         }
-        return status;
     }
 
-    void Logger::Log(LogLevel logLevel, Category category, const std::string& module, const std::string file, const std::string function, const uint16_t line, const std::string& format, ...)
+    void Logger::Log(LogLevel logLevel, const std::string& module, const std::string file, const std::string function, const uint16_t line, const std::string& format, ...)
     {
         if (logLevel <= _logLevel) {
             va_list arg;
@@ -81,9 +65,15 @@ namespace FireboltSDK::Transport {
             msg[position] = '\0';
 
             char formattedMsg[Logger::MaxBufSize];
-            const string time = WPEFramework::Core::Time::Now().ToTimeOnly(true);
-            const string categoryName =  WPEFramework::Core::EnumerateType<Logger::Category>(category).Data();
-            const string levelName =     WPEFramework::Core::EnumerateType<Logger::LogLevel>(logLevel).Data();
+            auto now = std::chrono::system_clock::now();
+            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+            std::time_t t = std::chrono::system_clock::to_time_t(now);
+            std::tm tm;
+            localtime_r(&t, &tm);
+            char timeBuf[16];
+            snprintf(timeBuf, sizeof(timeBuf), "%02d:%02d:%02d.%03ld", tm.tm_hour, tm.tm_min, tm.tm_sec, static_cast<long>(ms.count()));
+            const std::string time(timeBuf);
+            const std::string levelName = _logLevelNames[logLevel];
 
             static bool colorSet     = false;
             static char colorOn[16]  = { 0 };
@@ -98,14 +88,9 @@ namespace FireboltSDK::Transport {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-truncation"
-            if (categoryName.empty() != true) {
-                snprintf(formattedMsg, sizeof(formattedMsg), "%s%s: [%s][%s]:[%s][%s:%d](%s)<PID:%d><TID:%ld> : %s%s\n", colorOn, time.c_str(), levelName.c_str(), categoryName.c_str(), module.c_str(), WPEFramework::Core::File::FileName(file).c_str(), line, function.c_str(), TRACE_PROCESS_ID, TRACE_THREAD_ID, msg, colorOff);
-            } else {
-                snprintf(formattedMsg, sizeof(formattedMsg), "%s%s: [%s][%s][%s:%d](%s)<PID:%d><TID:%ld> : %s%s\n", colorOn, time.c_str(), levelName.c_str(), module.c_str(), WPEFramework::Core::File::FileName(file).c_str(), line, function.c_str(), TRACE_PROCESS_ID, TRACE_THREAD_ID, msg, colorOff);
-            }
+            snprintf(formattedMsg, sizeof(formattedMsg), "%s%s: [%s][%s][%s:%d](%s)<PID:%u><TID:%u> : %s%s\n", colorOn, time.c_str(), levelName.c_str(), module.c_str(), file.c_str(), line, function.c_str(), 0u/*TRACE_PROCESS_ID*/, 0u/*TRACE_THREAD_ID*/, msg, colorOff);
 #pragma GCC diagnostic pop
             LOG_MESSAGE(formattedMsg);
         }
     }
 }
-
