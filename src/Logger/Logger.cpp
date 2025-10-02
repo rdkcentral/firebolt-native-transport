@@ -26,6 +26,7 @@
 #include <ctime>
 #include <sys/time.h>
 #include <cstring>
+#include <sys/syscall.h>
 
 #ifdef ENABLE_SYSLOG
 #define LOG_MESSAGE(message) \
@@ -88,7 +89,9 @@ std::map<FireboltSDK::Transport::Logger::LogLevel, const char*> _logLevelNames =
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-truncation"
-            snprintf(formattedMsg, sizeof(formattedMsg), "%s%s: [%s][%s][%s:%d](%s)<PID:%u><TID:%u> : %s%s\n", colorOn, time.c_str(), levelName.c_str(), module.c_str(), file.c_str(), line, function.c_str(), 0u/*TRACE_PROCESS_ID*/, 0u/*TRACE_THREAD_ID*/, msg, colorOff);
+            snprintf(formattedMsg, sizeof(formattedMsg),
+            "%s%s: [%s][%s][%s:%d](%s)<PID:%u><TID:%u> : %s%s\n",
+            colorOn, time.c_str(), levelName.c_str(), module.c_str(), file.c_str(), line, function.c_str(), ::getpid(), ::gettid(), msg, colorOff);
 #pragma GCC diagnostic pop
             LOG_MESSAGE(formattedMsg);
         }

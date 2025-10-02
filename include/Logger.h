@@ -22,6 +22,7 @@
 #include "error.h"
 #include <stdint.h>
 #include <string>
+#include <typeinfo>
 
 namespace FireboltSDK::Transport {
 
@@ -52,8 +53,16 @@ namespace FireboltSDK::Transport {
         template<typename CLASS>
         static const std::string Module()
         {
-            return "TODO";
-            // return WPEFramework::Core::ClassNameOnly(typeid(CLASS).name()).Text(); 
+            std::string name = typeid(CLASS).name();
+            size_t last_colon = name.find_last_of(':');
+            if (last_colon != std::string::npos) {
+                name = name.substr(last_colon + 1);
+            }
+            size_t less_than = name.find('<');
+            if (less_than != std::string::npos) {
+                name = name.substr(0, less_than);
+            }
+            return name;
         }
 
     private:
