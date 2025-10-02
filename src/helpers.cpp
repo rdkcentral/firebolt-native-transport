@@ -23,13 +23,13 @@
 namespace Firebolt::Helpers
 {
 
-Result<void> setNL(const std::string& methodName, const nlohmann::json& parameters)
+Result<void> set(const std::string& methodName, const nlohmann::json& parameters)
 {
     nlohmann::json result;
     return Result<void>{FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters, result)};
 }
 
-Result<void> invokeNL(const std::string& methodName, const nlohmann::json& parameters)
+Result<void> invoke(const std::string& methodName, const nlohmann::json& parameters)
 {
     nlohmann::json result;
     return Result<void>{FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters, result)};

@@ -47,11 +47,11 @@ FIREBOLTSDK_EXPORT Result<PropertyType> get(const std::string& methodName, const
     return Result<PropertyType>{status};
 }
 
-FIREBOLTSDK_EXPORT Result<void> invokeNL(const std::string& methodName, const nlohmann::json& parameters);
-FIREBOLTSDK_EXPORT Result<void> setNL(const std::string& methodName, const nlohmann::json& parameters);
+FIREBOLTSDK_EXPORT Result<void> invoke(const std::string& methodName, const nlohmann::json& parameters);
+FIREBOLTSDK_EXPORT Result<void> set(const std::string& methodName, const nlohmann::json& parameters);
 
 template <typename JsonType, typename PropertyType>
-FIREBOLTSDK_EXPORT inline Result<PropertyType> invokeNL(const std::string& methodName, const nlohmann::json& parameters = {})
+FIREBOLTSDK_EXPORT inline Result<PropertyType> invoke(const std::string& methodName, const nlohmann::json& parameters = {})
 {
     nlohmann::json params;
     nlohmann::json result;
