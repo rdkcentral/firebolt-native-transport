@@ -19,7 +19,7 @@
 #pragma once
 
 #include "Portability.h"
-#include "Transport_NEW.h"
+#include "Transport.h"
 #include "Gateway.h"
 #include "Logger.h"
 
@@ -64,7 +64,7 @@ namespace FireboltSDK::Transport {
             RegisterConnectionChangeListener(listener);
             Firebolt::Error status = CreateTransport(_config["WsUrl"], _config["WaitTime"]);
             if (status == Firebolt::Error::None) {
-                Gateway::Instance().TransportUpdated(&_transport_pp);
+                Gateway::Instance().TransportUpdated(&_transport);
             }
             _connectionChangeListener(true, Firebolt::Error::None);
             return status;
@@ -102,7 +102,7 @@ namespace FireboltSDK::Transport {
     private:
         static constexpr uint32_t DefaultWaitTime = 10000;
 
-        Transport_PP _transport_pp;
+        Transport _transport;
         static Accessor* _singleton;
         nlohmann::json _config;
 

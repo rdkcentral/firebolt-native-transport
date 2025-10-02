@@ -28,12 +28,12 @@
 
 namespace FireboltSDK::Transport
 {
-class ITransportReceiver_PP {
+class ITransportReceiver {
 public:
     virtual void Receive(const nlohmann::json& message) = 0;
 };
 
-class Transport_PP // TODO: interface for mocking
+class Transport // TODO: interface for mocking
 {
 private:
     using client = websocketpp::client<websocketpp::config::asio_client>;
@@ -44,7 +44,7 @@ private:
     client::connection_ptr connection_;
     std::atomic<bool> connected_ = false;
     std::thread runner_thread_;
-    ITransportReceiver_PP *transportReceiver_ = nullptr;
+    ITransportReceiver *transportReceiver_ = nullptr;
     std::atomic<bool> stop_ = false;
 
 private:
@@ -86,12 +86,12 @@ private:
     }
 
 public:
-    Transport_PP() = default;
-    Transport_PP(const Transport_PP&) = delete;
-    Transport_PP& operator=(const Transport_PP&) = delete;
-    Transport_PP(Transport_PP&&) = delete;
-    Transport_PP& operator=(Transport_PP&&) = delete;
-    virtual ~Transport_PP() {
+    Transport() = default;
+    Transport(const Transport&) = delete;
+    Transport& operator=(const Transport&) = delete;
+    Transport(Transport&&) = delete;
+    Transport& operator=(Transport&&) = delete;
+    virtual ~Transport() {
         stop_ = true;
         client_.stop();
         if (runner_thread_.joinable()) {
@@ -107,7 +107,7 @@ public:
                 (websocketpp::log::alevel::frame_header | websocketpp::log::alevel::frame_payload | websocketpp::log::alevel::control));
 
             client_.init_asio();
-            client_.set_message_handler(websocketpp::lib::bind(&Transport_PP::on_message, this, &client_, websocketpp::lib::placeholders::_1, websocketpp::lib::placeholders::_2));
+            client_.set_message_handler(websocketpp::lib::bind(&Transport::on_message, this, &client_, websocketpp::lib::placeholders::_1, websocketpp::lib::placeholders::_2));
 
             websocketpp::lib::error_code ec;
             connection_ = client_.get_connection(url, ec);
@@ -118,7 +118,7 @@ public:
 
             client_.connect(connection_);
 
-            runner_thread_ = std::thread(std::bind(&Transport_PP::runner, this));
+            runner_thread_ = std::thread(std::bind(&Transport::runner, this));
             connected_ = true;
         } catch (websocketpp::exception const & e) {
             std::cout << e.what() << std::endl;
@@ -127,7 +127,7 @@ public:
         return Firebolt::Error::None;
     }
 
-    void SetTransportReceiver(ITransportReceiver_PP *transportReceiver)
+    void SetTransportReceiver(ITransportReceiver *transportReceiver)
     {
         transportReceiver_ = transportReceiver;
     }

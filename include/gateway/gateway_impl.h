@@ -22,7 +22,7 @@
 #include "error.h"
 
 #include "TypesPriv.h"
-#include "Transport_NEW.h"
+#include "Transport.h"
 
 #include "gateway/common.h"
 #include "gateway/client.h"
@@ -33,12 +33,12 @@
 
 namespace FireboltSDK::Transport
 {
-class GatewayImpl : public ITransportReceiver_PP
+class GatewayImpl : public ITransportReceiver
 {
     Config config;
     Client client;
     Server server;
-    Transport_PP* transport_pp;
+    Transport* transport_;
 
 public:
     GatewayImpl()
@@ -47,12 +47,12 @@ public:
     {
     }
 
-    void TransportUpdated(Transport_PP* transportPP)
+    void TransportUpdated(Transport* transport)
     {
-        this->transport_pp = transportPP;
-        client.SetTransport(transportPP);
-        if (transportPP != nullptr) {
-            transportPP->SetTransportReceiver(this);
+        this->transport_ = transport;
+        client.SetTransport(transport);
+        if (transport != nullptr) {
+            transport->SetTransportReceiver(this);
         }
     }
 
@@ -60,7 +60,7 @@ public:
     {
         if (message.contains("method")) {
             if (message.contains("id")) {
-                server.Request(transport_pp, message["id"], message["method"], message["params"]);
+                server.Request(transport_, message["id"], message["method"], message["params"]);
             } else {
                 server.Notify(message["method"], message["params"]);
             }
@@ -71,7 +71,7 @@ public:
 
     Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response)
     {
-        if (transport_pp == nullptr) {
+        if (transport_ == nullptr) {
             return Firebolt::Error::NotConnected;
         }
         return client.Request(method, parameters, response);

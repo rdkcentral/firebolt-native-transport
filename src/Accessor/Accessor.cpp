@@ -54,7 +54,7 @@ namespace FireboltSDK::Transport {
 
     Firebolt::Error Accessor::CreateTransport(const std::string& url, const uint32_t waitTime = DefaultWaitTime)
     {
-        _transport_pp.Connect(url);
+        _transport.Connect(url);
 
         return Firebolt::Error::None;
     }

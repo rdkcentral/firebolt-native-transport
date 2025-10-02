@@ -21,7 +21,7 @@
 
 #include "error.h"
 
-#include "Transport_NEW.h"
+#include "Transport.h"
 
 #include <string>
 #include <map>
@@ -127,7 +127,7 @@ public:
         }
     }
 
-    void Request(Transport_PP *transport, unsigned id, const std::string &method, const nlohmann::json &parameters)
+    void Request(Transport *transport, unsigned id, const std::string &method, const nlohmann::json &parameters)
     {
         size_t dotPos = method.find('.');
         if (dotPos == std::string::npos) {

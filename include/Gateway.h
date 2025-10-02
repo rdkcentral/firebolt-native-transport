@@ -22,7 +22,7 @@
 #include "error.h"
 
 #include "Portability.h"
-#include "Transport_NEW.h"
+#include "Transport.h"
 
 #include <functional>
 #include <string>
@@ -50,7 +50,7 @@ public:
     static Gateway& Instance();
     static void Dispose();
 
-    void TransportUpdated(Transport_PP* transportPP);
+    void TransportUpdated(Transport* transport);
 
     Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response)
     {

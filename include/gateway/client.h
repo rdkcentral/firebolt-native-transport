@@ -21,7 +21,7 @@
 
 #include "error.h"
 
-#include "Transport_NEW.h"
+#include "Transport.h"
 
 #include <chrono>
 #include <condition_variable>
@@ -57,7 +57,7 @@ class Client
     std::map <MessageID, std::shared_ptr<Caller>> queue;
     mutable std::mutex queue_mtx;
     Config config;
-    Transport_PP* transport_pp = nullptr;
+    Transport* transport_ = nullptr;
 
     std::atomic<bool> running { false };
     std::thread watchdogThread;
@@ -100,9 +100,9 @@ public:
         watchdogThread = std::thread(std::bind(&Client::watchdog, this));
     }
 
-    void SetTransport(Transport_PP* transportPP)
+    void SetTransport(Transport* transport)
     {
-        this->transport_pp = transportPP;
+        this->transport_ = transport;
     }
 
     virtual ~Client()
@@ -121,17 +121,17 @@ public:
 #else
     Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response)
     {
-        if (transport_pp == nullptr) {
+        if (transport_ == nullptr) {
             return Firebolt::Error::NotConnected;
         }
-        MessageID id = transport_pp->GetNextMessageID();
+        MessageID id = transport_->GetNextMessageID();
         std::shared_ptr<Caller> c = std::make_shared<Caller>(id);
         {
             std::lock_guard lck(queue_mtx);
             queue[id] = c;
         }
 
-        Firebolt::Error result = transport_pp->Send(method, parameters, id);
+        Firebolt::Error result = transport_->Send(method, parameters, id);
         if (result == Firebolt::Error::None) {
             {
                 std::unique_lock<std::mutex> lk(c->mtx);

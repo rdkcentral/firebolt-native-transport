@@ -50,8 +50,8 @@ Gateway::~Gateway()
     implementation.reset();
 }
 
-void Gateway::TransportUpdated(Transport_PP* transportPP)
+void Gateway::TransportUpdated(Transport* transport)
 {
-    implementation->TransportUpdated(transportPP);
+    implementation->TransportUpdated(transport);
 }
 } // namespace Firebolt::Transport
