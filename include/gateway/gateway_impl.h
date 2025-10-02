@@ -87,9 +87,9 @@ public:
     {
         if (message.contains("method")) {
             if (message.contains("id")) {
-                server.Request(transport_pp, message["id"], message["method"], to_string(message["params"]));
+                server.Request(transport_pp, message["id"], message["method"], message["params"]);
             } else {
-                server.Notify(message["method"], to_string(message["params"]));
+                server.Notify(message["method"], message["params"]);
             }
         } else {
             client.Response(message);
@@ -133,10 +133,10 @@ public:
             return status;
         }
         nlohmann::json params;
-        params["listen"] = true;
+        params["listen"] = false;
         ListeningResponse response;
         status = client.Request(event, params, response);
-        if (status == Firebolt::Error::None && (!response.isSet()|| response.isListening())) {
+        if (status == Firebolt::Error::None && (!response.isSet() || response.isListening())) {
             status == Firebolt::Error::General;
         }
         return status;

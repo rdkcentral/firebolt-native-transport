@@ -38,7 +38,7 @@ namespace FireboltSDK::Transport
 {
 class Server
 {
-    using DispatchFunctionEvent = std::function<void(void*, const void*, const string& parameters)>;
+    using DispatchFunctionEvent = std::function<void(void*, const void*, const nlohmann::json& parameters)>;
 
     struct CallbackDataEvent {
         const DispatchFunctionEvent lambda;
@@ -98,9 +98,9 @@ public:
     {
         Firebolt::Error status = Firebolt::Error::General;
 
-        std::function<void(void* usercb, const void* userdata, const std::string& parameters)> actualCallback = callback;
-        DispatchFunctionEvent implementation = [actualCallback](void* usercb, const void* userdata, const std::string& parameters) {
-            actualCallback(usercb, userdata, nlohmann::json::parse(parameters));
+        std::function<void(void* usercb, const void* userdata, const nlohmann::json& parameters)> actualCallback = callback;
+        DispatchFunctionEvent implementation = [actualCallback](void* usercb, const void* userdata, const nlohmann::json& parameters) {
+            actualCallback(usercb, userdata, parameters);
         };
         CallbackDataEvent callbackData = {implementation, usercb, userdata};
 
@@ -123,7 +123,7 @@ public:
         return eventMap.erase(getKeyFromEvent(event)) > 0 ? Firebolt::Error::None : Firebolt::Error::General;
     }
 
-    void Notify(const std::string &method, const std::string &parameters)
+    void Notify(const std::string &method, const nlohmann::json &parameters)
     {
         std::string key = method;
         std::lock_guard lck(eventMap_mtx);
@@ -134,7 +134,7 @@ public:
         }
     }
 
-    void Request(Transport_PP *transport, unsigned id, const std::string &method, const std::string &parameters)
+    void Request(Transport_PP *transport, unsigned id, const std::string &method, const nlohmann::json &parameters)
     {
         size_t dotPos = method.find('.');
         if (dotPos == std::string::npos) {
@@ -149,10 +149,12 @@ public:
         }
         auto& methods = provider->second.methods;
         auto it = methods.begin();
+        nlohmann::json params;
+        params["parameters"] = parameters;
         while (it != methods.end()) {
             it = std::find_if(it, methods.end(), [&methodName](const Method &m) { return m.name == methodName; });
             if (it != methods.end()) {
-                std::string response = it->lambda("{ \"parameters\":" + parameters + "}", it->usercb);
+                std::string response = it->lambda(parameters.dump(), it->usercb);
                 transport->SendResponse(id, response);
                 break;
             }
