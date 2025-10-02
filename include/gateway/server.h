@@ -154,7 +154,7 @@ public:
         }
     }
 
-    template <typename RESPONSE, typename CALLBACK>
+    template <typename CALLBACK>
     Firebolt::Error RegisterProviderInterface(const std::string &fullMethod, const CALLBACK &callback, void* usercb)
     {
         uint32_t waitTime = config.DefaultWaitTime;

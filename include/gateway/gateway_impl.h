@@ -113,10 +113,10 @@ public:
         return status;
     }
 
-    template <typename RESPONSE, typename CALLBACK>
+    template <typename CALLBACK>
     Firebolt::Error RegisterProviderInterface(const std::string &method, const CALLBACK& callback, void* usercb)
     {
-        Firebolt::Error status = server.RegisterProviderInterface<RESPONSE>(method, callback, usercb);
+        Firebolt::Error status = server.RegisterProviderInterface(method, callback, usercb);
         if (status != Firebolt::Error::None) {
             return status;
         }

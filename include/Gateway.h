@@ -67,10 +67,10 @@ public:
         return implementation->Unsubscribe(event);
     }
 
-    template <typename RESPONSE, typename CALLBACK>
+    template <typename CALLBACK>
     Firebolt::Error RegisterProviderInterface(const std::string &method, const CALLBACK& callback, void* usercb)
     {
-        return implementation->RegisterProviderInterface<RESPONSE>(method, callback, usercb);
+        return implementation->RegisterProviderInterface(method, callback, usercb);
     }
 
     Firebolt::Error UnregisterProviderInterface(const std::string &interface, const std::string &method, void* usercb)
