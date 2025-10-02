@@ -77,10 +77,9 @@ public:
         return client.Request(method, parameters, response);
     }
 
-    template <typename RESULT, typename CALLBACK>
-    Firebolt::Error Subscribe(const std::string& event, const CALLBACK& callback, void* usercb, const void* userdata, bool prioritize = false)
+    Firebolt::Error Subscribe(const std::string& event, std::function<void(void*, const nlohmann::json&)> callback, void* usercb)
     {
-        Firebolt::Error status = server.Subscribe<RESULT>(event, callback, usercb, userdata);
+        Firebolt::Error status = server.Subscribe(event, callback, usercb);
         if (status != Firebolt::Error::None) {
             return status;
         }

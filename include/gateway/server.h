@@ -34,12 +34,11 @@ namespace FireboltSDK::Transport
 {
 class Server
 {
-    using DispatchFunctionEvent = std::function<void(void*, const void*, const nlohmann::json& parameters)>;
+    using DispatchFunctionEvent = std::function<void(void*, const nlohmann::json& parameters)>;
 
     struct CallbackDataEvent {
         const DispatchFunctionEvent lambda;
         void* usercb;
-        const void* userdata;
     };
 
     using EventMap = std::map<std::string, CallbackDataEvent>;
@@ -88,16 +87,15 @@ public:
         eventMap.clear();
     }
 
-    template <typename RESULT, typename CALLBACK>
-    Firebolt::Error Subscribe(const std::string& event, const CALLBACK& callback, void* usercb, const void* userdata)
+    Firebolt::Error Subscribe(const std::string& event, std::function<void(void*, const nlohmann::json&)> callback, void* usercb)
     {
         Firebolt::Error status = Firebolt::Error::General;
 
-        std::function<void(void* usercb, const void* userdata, const nlohmann::json& parameters)> actualCallback = callback;
-        DispatchFunctionEvent implementation = [actualCallback](void* usercb, const void* userdata, const nlohmann::json& parameters) {
-            actualCallback(usercb, userdata, parameters);
+        std::function<void(void* usercb, const nlohmann::json& parameters)> actualCallback = callback;
+        DispatchFunctionEvent implementation = [actualCallback](void* usercb, const nlohmann::json& parameters) {
+            actualCallback(usercb, parameters);
         };
-        CallbackDataEvent callbackData = {implementation, usercb, userdata};
+        CallbackDataEvent callbackData = {implementation, usercb};
 
         std::string key = getKeyFromEvent(event);
 
@@ -125,7 +123,7 @@ public:
         EventMap::iterator eventIt = eventMap.find(method);
         if (eventIt != eventMap.end()) {
             CallbackDataEvent& callback = eventIt->second;
-            callback.lambda(callback.usercb, callback.userdata, parameters);
+            callback.lambda(callback.usercb, parameters);
         }
     }
 

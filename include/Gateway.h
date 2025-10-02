@@ -57,10 +57,9 @@ public:
         return implementation->Request(method, parameters, response);
     }
 
-    template <typename RESULT, typename CALLBACK>
-    Firebolt::Error Subscribe(const std::string& event, const CALLBACK& callback, void* usercb, const void* userdata, bool prioritize = false)
+    Firebolt::Error Subscribe(const std::string& event, std::function<void(void*, const nlohmann::json&)> callback, void* usercb)
     {
-        return implementation->Subscribe<RESULT>(event, callback, usercb, userdata, prioritize);
+        return implementation->Subscribe(event, callback, usercb);
     }
 
     Firebolt::Error Unsubscribe(const std::string& event)

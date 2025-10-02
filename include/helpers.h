@@ -72,7 +72,7 @@ struct SubscriptionData
 };
 
 template <typename JsonType, typename PropertyType>
-void onPropertyChangedCallback(void* subscriptionDataPtr, const void* userData, const nlohmann::json& jsonResponse)
+void onPropertyChangedCallback(void* subscriptionDataPtr, const nlohmann::json& jsonResponse)
 {
     SubscriptionData* subscriptionData = reinterpret_cast<SubscriptionData*>(subscriptionDataPtr);
     std::function<void(PropertyType)> notifier =
@@ -98,9 +98,9 @@ protected:
         std::lock_guard<std::mutex> lock(mutex_);
         subscriptions_[currentId_] = SubscriptionData{eventName, std::move(notification)};
         void* notificationPtr = reinterpret_cast<void*>(&subscriptions_[currentId_]);
-        Error status = FireboltSDK::Transport::Gateway::Instance().Subscribe<JsonType>(eventName,
+        Error status = FireboltSDK::Transport::Gateway::Instance().Subscribe(eventName,
                                                                onPropertyChangedCallback<JsonType, PropertyType>,
-                                                               notificationPtr, nullptr);
+                                                               notificationPtr);
         if (Error::None == status)
         {
             return Result<SubscriptionId>{currentId_++};
