@@ -34,7 +34,7 @@ namespace Firebolt::Helpers
 {
 
 template <typename JsonType, typename PropertyType>
-FIREBOLTSDK_EXPORT Result<PropertyType> get(const std::string& methodName, const nlohmann::json& parameters = nlohmann::json({})) 
+FIREBOLTSDK_EXPORT Result<PropertyType> get(const std::string& methodName, const nlohmann::json& parameters = nlohmann::json({}))
 {
     nlohmann::json result;
     Error status = FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters, result);
@@ -47,15 +47,14 @@ FIREBOLTSDK_EXPORT Result<PropertyType> get(const std::string& methodName, const
     return Result<PropertyType>{status};
 }
 
-FIREBOLTSDK_EXPORT Result<void> invoke(const std::string& methodName, const nlohmann::json& parameters);
+FIREBOLTSDK_EXPORT Result<void> invoke(const std::string& methodName, const nlohmann::json& parameters = nlohmann::json({}));
 FIREBOLTSDK_EXPORT Result<void> set(const std::string& methodName, const nlohmann::json& parameters);
 
 template <typename JsonType, typename PropertyType>
-FIREBOLTSDK_EXPORT inline Result<PropertyType> invoke(const std::string& methodName, const nlohmann::json& parameters = {})
+FIREBOLTSDK_EXPORT inline Result<PropertyType> invoke(const std::string& methodName, const nlohmann::json& parameters = nlohmann::json({}))
 {
-    nlohmann::json params;
     nlohmann::json result;
-    Error status = FireboltSDK::Transport::Gateway::Instance().Request(methodName, params, result);
+    Error status = FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters, result);
     if (status == Error::None)
     {
         JsonType jsonResult;
