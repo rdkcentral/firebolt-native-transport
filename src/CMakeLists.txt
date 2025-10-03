@@ -28,8 +28,7 @@ add_library(${TARGET} ${FIREBOLT_LIBRARY_TYPE}
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-find_package(WPEFrameworkWebSocket CONFIG REQUIRED)
-find_package(WPEFrameworkCore CONFIG REQUIRED)
+find_package(WPEFramework CONFIG REQUIRED)
 find_package(nlohmann_json)
 find_package(websocketpp)
 
