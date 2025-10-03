@@ -28,7 +28,7 @@ namespace FireboltSDK::Transport {
     {
         _singleton = this;
 
-        _config["WaitTime"] = DefaultWaitTime;
+        _config["WaitTime"] = Config::DefaultWaitTime;
         _config["LogLevel"] = "Info";
         _config["WsUrl"] = "ws://127.0.0.1:9998";
         _config["RPCv2"] = true;
@@ -43,8 +43,6 @@ namespace FireboltSDK::Transport {
         };
 
         Logger::SetLogLevel(logLevels[_config["LogLevel"]]);
-
-        FIREBOLT_LOG_INFO("Accessor", "Url = %s", _config["WsUrl"].get<std::string>().c_str());
     }
 
     Accessor::~Accessor()
@@ -52,7 +50,7 @@ namespace FireboltSDK::Transport {
         _singleton = nullptr;
     }
 
-    Firebolt::Error Accessor::CreateTransport(const std::string& url, const uint32_t waitTime = DefaultWaitTime)
+    Firebolt::Error Accessor::CreateTransport(const std::string& url)
     {
         _transport.Connect(url);
 

@@ -62,7 +62,18 @@ namespace FireboltSDK::Transport {
         Firebolt::Error Connect(const OnConnectionChanged listener)
         {
             RegisterConnectionChangeListener(listener);
-            Firebolt::Error status = CreateTransport(_config["WsUrl"], _config["WaitTime"]);
+            std::string urlParamsKeys[] = { "RPCv2" };
+            std::string urlParams;
+            for ( auto k : urlParamsKeys ) {
+                if ( _config.contains(k) ) {
+                    if (_config[k].is_boolean() ) {
+                        urlParams += (urlParams.empty() ? "?" : "&") + k + "=" + (_config[k].get<bool>() ? "true" : "false");
+                    }
+                }
+            }
+            std::string url = _config["WsUrl"].get<std::string>() + urlParams;
+            FIREBOLT_LOG_INFO("Accessor", "Connecting to url = %s", url.c_str());
+            Firebolt::Error status = CreateTransport(url);
             if (status == Firebolt::Error::None) {
                 Gateway::Instance().TransportUpdated(&_transport);
             }
@@ -94,7 +105,7 @@ namespace FireboltSDK::Transport {
         }
 
     private:
-        Firebolt::Error CreateTransport(const std::string& url, const uint32_t waitTime);
+        Firebolt::Error CreateTransport(const std::string& url);
         Firebolt::Error DestroyTransport();
 
         void ConnectionChanged(const bool connected, const Firebolt::Error error);
