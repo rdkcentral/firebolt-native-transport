@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "Portability.h"
+#include "firebolttransport_export.h"
 #include "Transport.h"
 #include "Gateway.h"
 #include "Logger.h"
@@ -30,7 +30,7 @@ namespace FireboltSDK::Transport {
 
     using OnConnectionChanged = std::function<void(const bool connected, const Firebolt::Error error)>;
 
-    class FIREBOLTSDK_EXPORT Accessor {
+    class FIREBOLTTRANSPORT_EXPORT Accessor {
     private:
         static constexpr uint8_t JSONVersion = 2;
 

@@ -21,7 +21,7 @@
 
 #include "error.h"
 
-#include "Portability.h"
+#include "firebolttransport_export.h"
 #include "Transport.h"
 
 #include <functional>
@@ -34,7 +34,7 @@
 
 namespace FireboltSDK::Transport
 {
-class FIREBOLTSDK_EXPORT Gateway {
+class FIREBOLTTRANSPORT_EXPORT Gateway {
     static Gateway *instance;
 
     std::unique_ptr<GatewayImpl> implementation;

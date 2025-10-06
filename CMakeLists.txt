@@ -29,7 +29,7 @@ option(ENABLE_UNIT_TESTS "Build openrpc native test" OFF)
 
 if (FIREBOLT_ENABLE_STATIC_LIB)
     set(FIREBOLT_LIBRARY_TYPE STATIC)
-    add_compile_definitions(FIREBOLTSDK_STATIC)
+    add_compile_definitions(FIREBOLTTRANSPORT_STATIC_DEFINE)
 else ()
     set(FIREBOLT_LIBRARY_TYPE SHARED)
 endif ()
@@ -52,10 +52,3 @@ if (ENABLE_UNIT_TESTS)
 endif ()
 
 add_subdirectory(src)
-
-message("${CMAKE_BINARY_DIR}/${PROJECT_NAME}Config.cmake")
-
-configure_file("${CMAKE_SOURCE_DIR}/cmake/project.cmake.in"
-    "${CMAKE_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-    @ONLY)
-

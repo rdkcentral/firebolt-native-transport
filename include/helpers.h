@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "Portability.h"
+#include "firebolttransport_export.h"
 #include "Gateway.h"
 #include "FireboltSDK.h"
 #include "common/types.h"
@@ -34,7 +34,7 @@ namespace Firebolt::Helpers
 {
 
 template <typename JsonType, typename PropertyType>
-FIREBOLTSDK_EXPORT Result<PropertyType> get(const std::string& methodName, const nlohmann::json& parameters = nlohmann::json({}))
+FIREBOLTTRANSPORT_EXPORT Result<PropertyType> get(const std::string& methodName, const nlohmann::json& parameters = nlohmann::json({}))
 {
     nlohmann::json result;
     Error status = FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters, result);
@@ -47,11 +47,11 @@ FIREBOLTSDK_EXPORT Result<PropertyType> get(const std::string& methodName, const
     return Result<PropertyType>{status};
 }
 
-FIREBOLTSDK_EXPORT Result<void> invoke(const std::string& methodName, const nlohmann::json& parameters = nlohmann::json({}));
-FIREBOLTSDK_EXPORT Result<void> set(const std::string& methodName, const nlohmann::json& parameters);
+FIREBOLTTRANSPORT_EXPORT Result<void> invoke(const std::string& methodName, const nlohmann::json& parameters = nlohmann::json({}));
+FIREBOLTTRANSPORT_EXPORT Result<void> set(const std::string& methodName, const nlohmann::json& parameters);
 
 template <typename JsonType, typename PropertyType>
-FIREBOLTSDK_EXPORT inline Result<PropertyType> invoke(const std::string& methodName, const nlohmann::json& parameters = nlohmann::json({}))
+FIREBOLTTRANSPORT_EXPORT inline Result<PropertyType> invoke(const std::string& methodName, const nlohmann::json& parameters = nlohmann::json({}))
 {
     nlohmann::json result;
     Error status = FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters, result);
@@ -81,7 +81,7 @@ void onPropertyChangedCallback(void* subscriptionDataPtr, const nlohmann::json& 
     notifier(jsonType.Value());
 }
 
-class FIREBOLTSDK_EXPORT SubscriptionHelper
+class FIREBOLTTRANSPORT_EXPORT SubscriptionHelper
 {
 public:
     void unsubscribeAll();

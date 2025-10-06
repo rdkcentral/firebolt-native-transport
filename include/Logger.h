@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "Portability.h"
+#include "firebolttransport_export.h"
 #include "error.h"
 #include <stdint.h>
 #include <string>
@@ -26,7 +26,7 @@
 
 namespace FireboltSDK::Transport {
 
-    class FIREBOLTSDK_EXPORT Logger {
+    class FIREBOLTTRANSPORT_EXPORT Logger {
     private:
         static constexpr uint16_t MaxBufSize = 512;
 
