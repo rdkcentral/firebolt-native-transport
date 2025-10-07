@@ -49,9 +49,14 @@ private:
 
 private:
     void on_message(client* client_, websocketpp::connection_hdl hdl, message_ptr msg) {
-        std::cout << "on_message: " << "msg: " << msg->get_payload() << std::endl;
         if (transportReceiver_ != nullptr) {
-            transportReceiver_->Receive(nlohmann::json::parse(msg->get_payload()));
+            nlohmann::json jsonMsg = nlohmann::json::parse(msg->get_payload());
+#ifdef DEBUG_TRANSPORT
+            if (jsonMsg.contains("error")) {
+                std::cout << "ERR: on_message: " << "msg: " << jsonMsg.dump() << std::endl;
+            }
+#endif
+            transportReceiver_->Receive(jsonMsg);
         }
     }
 
@@ -150,6 +155,9 @@ public:
         msg["id"] = id;
         msg["method"] = method;
         msg["params"] = params;
+#ifdef DEBUG_TRANSPORT
+        std::cout << "send: " << "msg: " << msg.dump() << std::endl;
+#endif
         client_.send(client_.get_con_from_hdl(connection_->get_handle()), to_string(msg), websocketpp::frame::opcode::text, ec);
         if (ec) {
             std::cout << "Send failed, " << ec.message() << std::endl;
