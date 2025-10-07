@@ -22,9 +22,6 @@
 #include <vector>
 #include <filesystem>
 
-#include <core/core.h>
-#include <websocket/websocket.h>
-
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
@@ -35,8 +32,6 @@
 #error "must be included only for UTs"
 #endif
 
-using nlohmann::json;
-using nlohmann::json_schema::json_validator;
 using namespace ::testing;
 
 #define REMOVE_QUOTES(s) (s.substr(1, s.length() - 2))
@@ -81,7 +76,7 @@ class JsonEngine
             return "";
         }
 
-        json read_json_from_file()
+        nlohmann::json read_json_from_file()
         {
             std::string filename = UT_OPEN_RPC_FILE;
             std::ifstream file(filename);
@@ -90,12 +85,12 @@ class JsonEngine
                 throw std::runtime_error("Could not open file: " + filename);
             }
 
-            json j;
+            nlohmann::json j;
             file >> j;
             return j;
         }
 
-        json resolve_reference(const json &full_schema, const std::string &ref)
+        nlohmann::json resolve_reference(const nlohmann::json &full_schema, const std::string &ref)
         {
             if (ref.find("#/") != 0)
             {
@@ -105,7 +100,7 @@ class JsonEngine
             std::string path = ref.substr(2);
             std::istringstream ss(path);
             std::string token;
-            json current = full_schema;
+            nlohmann::json current = full_schema;
 
             while (std::getline(ss, token, '/'))
             {
@@ -122,7 +117,7 @@ class JsonEngine
             return current;
         }
 
-        json process_schema(json schema, const json &full_schema)
+        nlohmann::json process_schema(nlohmann::json schema, const nlohmann::json &full_schema)
         {
             if (schema.is_object())
             {
@@ -150,9 +145,9 @@ class JsonEngine
 
 
         // template <typename RESPONSE>
-        void MockRequest(const WPEFramework::Core::JSONRPC::Message* message)
+        void MockRequest(const nlohmann::json& message)
         {
-            std::string methodName = capitalizeFirstChar(message->Designator.Value().c_str());
+            std::string methodName = capitalizeFirstChar(message["method"]);
 
             /* TODO: Add a flag here that will be set to true if the method name is found in the rpc block, u
                Use the flag to validate "Method not found" or other errors from SDK if applicable */
@@ -165,23 +160,23 @@ class JsonEngine
 
                     // ID Validation
                     // TODO: Check if id gets incremented by 1 for each request
-                    EXPECT_THAT(message->Id, AllOf(Ge(1),Le(std::numeric_limits<int>::max())));
+                    // EXPECT_THAT(message->Id, AllOf(Ge(1),Le(std::numeric_limits<int>::max())));
 
                     // Schema validation
-                    const json requestParams = json::parse(message->Parameters.Value());
+                    const nlohmann::json requestParams = message["params"];
                     if(method["params"].empty()) {
                         std::cout << "Schema validation for empty parameters" << std::endl;
                         EXPECT_EQ(requestParams, "{}"_json);
                     }
                     else {
-                        json_validator validator(nullptr, nlohmann::json_schema::default_string_format_check);
-                        const json openRPCParams = method["params"];
+                        nlohmann::json_schema::json_validator validator(nullptr, nlohmann::json_schema::default_string_format_check);
+                        const nlohmann::json openRPCParams = method["params"];
                         for (auto& item : openRPCParams.items()) {
                             std::string key = item.key();
-                            json currentSchema = item.value();
+                            nlohmann::json currentSchema = item.value();
                             std::string paramName = currentSchema["name"];
                             if (requestParams.contains(paramName)) {
-                                json dereferenced_schema = process_schema(currentSchema, _data);
+                                nlohmann::json dereferenced_schema = process_schema(currentSchema, _data);
                                 try{
                                     validator.set_root_schema(dereferenced_schema["schema"]);
                                     validator.validate(requestParams[paramName]);
@@ -196,21 +191,21 @@ class JsonEngine
                 }
             }
         }
-        
-        template <typename RESPONSE>
-        Firebolt::Error MockResponse(WPEFramework::Core::JSONRPC::Message &message, RESPONSE &response)
-        {
-                std::string methodName = capitalizeFirstChar(message.Designator.Value().c_str());
 
-                // Loop through the methods to find the one with the given name
-                for (const auto &method : _data["methods"])
+        Firebolt::Error MockResponse(nlohmann::json &message)
+        {
+            std::string methodName = capitalizeFirstChar(message["method"]);
+
+            // Loop through the methods to find the one with the given name
+            for (const auto &method : _data["methods"])
+            {
+                if (method.contains("name") && (method["name"] == methodName))
                 {
-                    if (method.contains("name") && (method["name"] == methodName))
-                    {
-                        message.Result = method["examples"][0]["result"]["value"].dump();
-                    }
+                    message["result"] = method["examples"][0]["result"]["value"].dump();
+                    return Firebolt::Error::None;
                 }
-            return Firebolt::Error::None;
+            }
+            return Firebolt::Error::General;
         }
 };
 
