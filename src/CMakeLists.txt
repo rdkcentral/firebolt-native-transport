@@ -54,6 +54,13 @@ target_include_directories(${TARGET}
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}>
 )
 
+if (ENABLE_UNIT_TESTS)
+    target_include_directories(${TARGET}
+        PRIVATE
+            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include-test>
+    )
+endif ()
+
 set_target_properties(${TARGET} PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED YES
@@ -101,6 +108,14 @@ install(
     DESTINATION include/${PROJECT_NAME}
     FILES_MATCHING PATTERN "*.h"
 )
+
+if (ENABLE_UNIT_TESTS)
+    install(
+        DIRECTORY ${CMAKE_SOURCE_DIR}/include-test/
+        DESTINATION include/${PROJECT_NAME}
+        FILES_MATCHING PATTERN "*.h"
+    )
+endif ()
 
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}_export.h

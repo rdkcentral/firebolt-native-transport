@@ -21,7 +21,6 @@
 
 #include "firebolttransport_export.h"
 #include "Gateway.h"
-#include "FireboltSDK.h"
 #include "common/types.h"
 #include "error.h"
 #include <any>
