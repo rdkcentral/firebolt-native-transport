@@ -52,9 +52,7 @@ private:
         if (transportReceiver_ != nullptr) {
             nlohmann::json jsonMsg = nlohmann::json::parse(msg->get_payload());
 #ifdef DEBUG_TRANSPORT
-            if (jsonMsg.contains("error")) {
-                std::cout << "ERR: on_message: " << "msg: " << jsonMsg.dump() << std::endl;
-            }
+            std::cout << "on_message: " << "msg: " << jsonMsg.dump() << std::endl;
 #endif
             transportReceiver_->Receive(jsonMsg);
         }

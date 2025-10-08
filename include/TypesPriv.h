@@ -70,7 +70,7 @@ private:
 using String = BasicType<std::string>;
 using Boolean = BasicType<bool>;
 using Float = BasicType<float>;
-using Unsiged = BasicType<uint32_t>;
+using Unsigned = BasicType<uint32_t>;
 using Integer = BasicType<int32_t>;
 
 template <typename T1, typename T2>

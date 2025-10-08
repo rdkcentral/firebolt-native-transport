@@ -50,20 +50,6 @@ FIREBOLTTRANSPORT_EXPORT Result<PropertyType> get(const std::string& methodName,
 FIREBOLTTRANSPORT_EXPORT Result<void> invoke(const std::string& methodName, const nlohmann::json& parameters = nlohmann::json({}));
 FIREBOLTTRANSPORT_EXPORT Result<void> set(const std::string& methodName, const nlohmann::json& parameters);
 
-template <typename JsonType, typename PropertyType>
-FIREBOLTTRANSPORT_EXPORT inline Result<PropertyType> invoke(const std::string& methodName, const nlohmann::json& parameters = nlohmann::json({}))
-{
-    nlohmann::json result;
-    Error status = FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters, result);
-    if (status == Error::None)
-    {
-        JsonType jsonResult;
-        jsonResult.FromJson(result);
-        return Result<PropertyType>{jsonResult.Value()};
-    }
-    return Result<PropertyType>{status};
-}
-
 struct SubscriptionData
 {
     std::string eventName;

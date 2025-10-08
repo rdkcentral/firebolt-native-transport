@@ -26,7 +26,14 @@ namespace Firebolt::Helpers
 Result<void> set(const std::string& methodName, const nlohmann::json& parameters)
 {
     nlohmann::json result;
-    return Result<void>{FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters, result)};
+    nlohmann::json p;
+    if (parameters.is_object()) {
+        p = parameters;
+    }
+    else {
+        p["value"] = parameters;
+    }
+    return Result<void>{FireboltSDK::Transport::Gateway::Instance().Request(methodName, p, result)};
 }
 
 Result<void> invoke(const std::string& methodName, const nlohmann::json& parameters)
