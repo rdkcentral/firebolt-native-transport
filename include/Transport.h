@@ -51,18 +51,27 @@ public:
     void SetLogging(websocketpp::log::level include, websocketpp::log::level exclude = 0);
 
 private:
-    void on_message(websocketpp::client<websocketpp::config::asio_client>* client_, websocketpp::connection_hdl hdl, websocketpp::config::asio_client::message_type::ptr msg);
-    void runner();
+    void start();
+    void on_message(websocketpp::connection_hdl hdl, websocketpp::client<websocketpp::config::asio_client>::message_ptr msg);
+    void on_open(websocketpp::client<websocketpp::config::asio_client>* c, websocketpp::connection_hdl hdl);
+    void on_close(websocketpp::client<websocketpp::config::asio_client>* c, websocketpp::connection_hdl hdl);
+    void on_fail(websocketpp::client<websocketpp::config::asio_client>* c, websocketpp::connection_hdl hdl);
 
 private:
-    class TransportImpl;
+    // websocketpp::client<websocketpp::config::asio_client>::connection_ptr connection_;
+    enum class TransportState;
 
     unsigned id_counter_ = 0;
-    websocketpp::client<websocketpp::config::asio_client> client_;
-    websocketpp::client<websocketpp::config::asio_client>::connection_ptr connection_;
-    std::atomic<bool> connected_ = false;
-    std::thread runner_thread_;
+
     ITransportReceiver *transportReceiver_ = nullptr;
-    std::atomic<bool> stop_ = false;
+
+    websocketpp::client<websocketpp::config::asio_client> client_;
+    websocketpp::lib::shared_ptr<websocketpp::lib::thread> m_thread;
+    websocketpp::connection_hdl m_hdl;
+
+    TransportState  m_status;
+    std::string m_server;
+    std::string m_error_reason;
+
 };
 }
