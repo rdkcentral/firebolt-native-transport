@@ -33,161 +33,36 @@ public:
     virtual void Receive(const nlohmann::json& message) = 0;
 };
 
-class Transport // TODO: interface for mocking
+class Transport
 {
-private:
-    using client = websocketpp::client<websocketpp::config::asio_client>;
-    using message_ptr = websocketpp::config::asio_client::message_type::ptr;
-
-    unsigned id_counter_ = 0;
-    client client_;
-    client::connection_ptr connection_;
-    std::atomic<bool> connected_ = false;
-    std::thread runner_thread_;
-    ITransportReceiver *transportReceiver_ = nullptr;
-    std::atomic<bool> stop_ = false;
-
-private:
-    void on_message(client* client_, websocketpp::connection_hdl hdl, message_ptr msg) {
-        if (transportReceiver_ != nullptr) {
-            nlohmann::json jsonMsg = nlohmann::json::parse(msg->get_payload());
-#ifdef DEBUG_TRANSPORT
-            std::cout << "on_message: " << "msg: " << jsonMsg.dump() << std::endl;
-#endif
-            transportReceiver_->Receive(jsonMsg);
-        }
-    }
-
-    void runner() {
-        while (!stop_) {
-            try {
-                connected_ = true;
-                client_.run();
-            } catch (websocketpp::exception const & e) {
-                connected_ = false;
-                std::cout << "runner, " << e.what() << std::endl;
-            }
-        }
-    }
-
-    Firebolt::Error mapError(websocketpp::lib::error_code error)
-    {
-        using EV = websocketpp::error::value;
-        switch (error.value()) {
-            case EV::con_creation_failed:
-            case EV::unrequested_subprotocol:
-            case EV::http_connection_ended:
-            case EV::open_handshake_timeout:
-            case EV::close_handshake_timeout:
-            case EV::invalid_port:
-            case EV::rejected:
-                return Firebolt::Error::Timedout;
-            case EV::general:
-            default:
-                return Firebolt::Error::General;
-        }
-    }
-
 public:
     Transport() = default;
     Transport(const Transport&) = delete;
     Transport& operator=(const Transport&) = delete;
     Transport(Transport&&) = delete;
     Transport& operator=(Transport&&) = delete;
-    virtual ~Transport() {
-        stop_ = true;
-        client_.stop();
-        if (runner_thread_.joinable()) {
-            runner_thread_.join();
-        }
-    }
+    virtual ~Transport();
 
-    Firebolt::Error Connect(std::string url)
-    {
-        try {
-            SetLogging(
-                websocketpp::log::alevel::all,
-                (websocketpp::log::alevel::frame_header | websocketpp::log::alevel::frame_payload | websocketpp::log::alevel::control));
+    Firebolt::Error Connect(std::string url);
+    void SetTransportReceiver(ITransportReceiver *transportReceiver);
+    unsigned GetNextMessageID();
+    Firebolt::Error Send(const std::string &method, const nlohmann::json &params, const unsigned id);
+    Firebolt::Error SendResponse(const unsigned id, const std::string &response);
+    void SetLogging(websocketpp::log::level include, websocketpp::log::level exclude = 0);
 
-            client_.init_asio();
-            client_.set_message_handler(websocketpp::lib::bind(&Transport::on_message, this, &client_, websocketpp::lib::placeholders::_1, websocketpp::lib::placeholders::_2));
+private:
+    void on_message(websocketpp::client<websocketpp::config::asio_client>* client_, websocketpp::connection_hdl hdl, websocketpp::config::asio_client::message_type::ptr msg);
+    void runner();
 
-            websocketpp::lib::error_code ec;
-            connection_ = client_.get_connection(url, ec);
-            if (ec) {
-                std::cout << "could not create connection, " << ec.message() << std::endl;
-                return Firebolt::Error::NotConnected;
-            }
+private:
+    class TransportImpl;
 
-            client_.connect(connection_);
-
-            runner_thread_ = std::thread(std::bind(&Transport::runner, this));
-            connected_ = true;
-        } catch (websocketpp::exception const & e) {
-            std::cout << e.what() << std::endl;
-            return Firebolt::Error::General;
-        }
-        return Firebolt::Error::None;
-    }
-
-    void SetTransportReceiver(ITransportReceiver *transportReceiver)
-    {
-        transportReceiver_ = transportReceiver;
-    }
-
-    unsigned GetNextMessageID()
-    {
-        return ++id_counter_;
-    }
-
-    Firebolt::Error Send(const std::string &method, const nlohmann::json &params, const unsigned id)
-    {
-        if (!connected_) {
-            return Firebolt::Error::NotConnected;
-        }
-
-        websocketpp::lib::error_code ec;
-
-        nlohmann::json msg;
-        msg["jsonrpc"] = "2.0";
-        msg["id"] = id;
-        msg["method"] = method;
-        msg["params"] = params;
-#ifdef DEBUG_TRANSPORT
-        std::cout << "send: " << "msg: " << msg.dump() << std::endl;
-#endif
-        client_.send(client_.get_con_from_hdl(connection_->get_handle()), to_string(msg), websocketpp::frame::opcode::text, ec);
-        if (ec) {
-            std::cout << "Send failed, " << ec.message() << std::endl;
-            return mapError(ec);
-        }
-        return Firebolt::Error::None;
-    }
-
-    Firebolt::Error SendResponse(const unsigned id, const std::string &response)
-    {
-        if (!connected_) {
-            return Firebolt::Error::NotConnected;
-        }
-
-        websocketpp::lib::error_code ec;
-
-        nlohmann::json msg;
-        msg["jsonrpc"] = "2.0";
-        msg["id"] = id;
-        msg["result"] = nlohmann::json::parse(response);
-        client_.send(client_.get_con_from_hdl(connection_->get_handle()), to_string(msg), websocketpp::frame::opcode::text, ec);
-        if (ec) {
-            std::cout << "Send failed, " << ec.message() << std::endl;
-            return mapError(ec);
-        }
-        return Firebolt::Error::None;
-    }
-
-    void SetLogging(websocketpp::log::level include, websocketpp::log::level exclude = 0)
-    {
-        client_.set_access_channels(include);
-        client_.clear_access_channels(exclude);
-    }
+    unsigned id_counter_ = 0;
+    websocketpp::client<websocketpp::config::asio_client> client_;
+    websocketpp::client<websocketpp::config::asio_client>::connection_ptr connection_;
+    std::atomic<bool> connected_ = false;
+    std::thread runner_thread_;
+    ITransportReceiver *transportReceiver_ = nullptr;
+    std::atomic<bool> stop_ = false;
 };
 }
