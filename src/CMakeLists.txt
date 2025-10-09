@@ -30,8 +30,6 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 
 add_library(${TARGET} ${FIREBOLT_LIBRARY_TYPE}
     ${SOURCES}
-    Logger/Logger.cpp
-    Accessor/Accessor.cpp
 )
 
 find_package(nlohmann_json CONFIG REQUIRED)

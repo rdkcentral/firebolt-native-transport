@@ -17,7 +17,12 @@
  */
 
 #include "Accessor.h"
-
+#include "Logger.h"
+#include "Gateway.h"
+#include "Transport.h"
+#include "error.h"
+#include "TypesPriv.h"
+#include <nlohmann/json.hpp>
 #include <chrono>
 
 namespace FireboltSDK::Transport {
@@ -65,7 +70,7 @@ namespace FireboltSDK::Transport {
     void Accessor::ConnectionChanged(const bool connected, const Firebolt::Error error)
     {
         _connected = connected;
-        if (_connectionChangeListener != nullptr) { // Notify a listener about the connection change
+        if (_connectionChangeListener != nullptr) {
              _connectionChangeListener(connected, error);
         }
     }

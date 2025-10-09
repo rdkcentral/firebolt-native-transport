@@ -19,28 +19,26 @@
 
 #pragma once
 
-#include "error.h"
-
-#include "firebolttransport_export.h"
-#include "Transport.h"
-
 #include <functional>
 #include <string>
-
-#include "gateway/common.h"
-#include "gateway/gateway_impl.h"
-
 #include <nlohmann/json.hpp>
+#include "error.h"
+#include "Transport.h"
+#include "firebolttransport_export.h"
 
 namespace FireboltSDK::Transport
 {
+
+struct Config
+{
+    static constexpr uint64_t watchdogThreshold_ms = 3000;
+    static constexpr uint64_t watchdogCycle_ms = 500;
+    static constexpr uint32_t DefaultWaitTime = -1;
+};
+
 class FIREBOLTTRANSPORT_EXPORT Gateway {
-    static Gateway *instance;
-
-    std::unique_ptr<GatewayImpl> implementation;
-
 private:
-    Gateway(std::unique_ptr<GatewayImpl> implementation);
+    Gateway();
 
 public:
     Gateway(const Gateway&) = delete;
@@ -52,30 +50,18 @@ public:
 
     void TransportUpdated(Transport* transport);
 
-    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response)
-    {
-        return implementation->Request(method, parameters, response);
-    }
-
-    Firebolt::Error Subscribe(const std::string& event, std::function<void(void*, const nlohmann::json&)> callback, void* usercb)
-    {
-        return implementation->Subscribe(event, callback, usercb);
-    }
-
-    Firebolt::Error Unsubscribe(const std::string& event)
-    {
-        return implementation->Unsubscribe(event);
-    }
+    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response);
+    Firebolt::Error Subscribe(const std::string& event, std::function<void(void*, const nlohmann::json&)> callback, void* usercb);
+    Firebolt::Error Unsubscribe(const std::string& event);
 
     template <typename CALLBACK>
-    Firebolt::Error RegisterProviderInterface(const std::string &method, const CALLBACK& callback, void* usercb)
-    {
-        return implementation->RegisterProviderInterface(method, callback, usercb);
-    }
+    Firebolt::Error RegisterProviderInterface(const std::string &method, const CALLBACK& callback, void* usercb);
+    Firebolt::Error UnregisterProviderInterface(const std::string &interface, const std::string &method, void* usercb);
 
-    Firebolt::Error UnregisterProviderInterface(const std::string &interface, const std::string &method, void* usercb)
-    {
-        return implementation->UnregisterProviderInterface(interface, method, usercb);
-    }
+private:
+    static Gateway *instance;
+
+    class GatewayImpl;
+    std::unique_ptr<GatewayImpl> implementation;
 };
 } // namespace Firebolt::Transport
