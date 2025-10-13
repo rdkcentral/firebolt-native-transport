@@ -28,6 +28,8 @@
 #include <nlohmann/json.hpp>
 #include <nlohmann/json-schema.hpp>
 
+#include "error.h"
+
 #ifndef UNIT_TEST
 #error "must be included only for UTs"
 #endif
@@ -66,13 +68,13 @@ class JsonEngine
         std::string get_value(const std::string& method_name)
         {
             for (const auto &method : _data["methods"])
+            {
+                if (method.contains("name") && (method["name"] == method_name))
                 {
-                    if (method.contains("name") && (method["name"] == method_name))
-                    {
-                        auto value = method["examples"][0]["result"]["value"];
-                        return value.dump();
-                    }
+                    auto value = method["examples"][0]["result"]["value"];
+                    return value.dump();
                 }
+            }
             return "";
         }
 
@@ -143,8 +145,6 @@ class JsonEngine
             return schema;
         }
 
-
-        // template <typename RESPONSE>
         void MockRequest(const nlohmann::json& message)
         {
             std::string methodName = capitalizeFirstChar(message["method"]);
@@ -154,7 +154,7 @@ class JsonEngine
             for (const auto &method : _data["methods"])
             {
                 if (method.contains("name") && (method["name"] == methodName))
-                {   
+                {
                     // Method name validation
                     EXPECT_EQ(methodName, method["name"]);
 
@@ -201,7 +201,7 @@ class JsonEngine
             {
                 if (method.contains("name") && (method["name"] == methodName))
                 {
-                    message["result"] = method["examples"][0]["result"]["value"].dump();
+                    message["result"] = method["examples"][0]["result"]["value"];
                     return Firebolt::Error::None;
                 }
             }
