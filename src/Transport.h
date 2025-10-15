@@ -21,6 +21,7 @@
 
 #include "error.h"
 
+#include <atomic>
 #include <functional>
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -63,7 +64,7 @@ private:
 private:
     enum class TransportState;
 
-    unsigned id_counter_ = 0;
+    std::atomic<unsigned> id_counter_ = 0;
     MessageCallback messageReceiver_;
     ConnectionCallback connectionReceiver_;
     websocketpp::client<websocketpp::config::asio_client> client_;
