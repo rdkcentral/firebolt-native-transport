@@ -60,30 +60,10 @@ private:
     static bool formatter_addLocation;
     static bool formatter_addFunction;
 };
-} // namespace FireboltSDK
+}
 
-#define FIREBOLT_LOG(level, module, ...)                                                                               \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        FireboltSDK::Logger::Log(level, module, __FILE__, __func__, __LINE__, __VA_ARGS__);                            \
-    } while (0)
-#define FIREBOLT_LOG_ERROR(module, ...)                                                                                \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Error, module, __VA_ARGS__);                                       \
-    } while (0)
-#define FIREBOLT_LOG_WARNING(module, ...)                                                                              \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Warning, module, __VA_ARGS__);                                     \
-    } while (0)
-#define FIREBOLT_LOG_INFO(module, ...)                                                                                 \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Info, module, __VA_ARGS__);                                        \
-    } while (0)
-#define FIREBOLT_LOG_DEBUG(module, ...)                                                                                \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Debug, module, __VA_ARGS__);                                       \
-    } while (0)
+#define FIREBOLT_LOG(level, module, ...)   do { FireboltSDK::Logger::Log(level, module, __FILE__, __func__, __LINE__, __VA_ARGS__); } while (0)
+#define FIREBOLT_LOG_ERROR(module, ...)    do { FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Error, module, __VA_ARGS__); } while (0)
+#define FIREBOLT_LOG_WARNING(module, ...)  do { FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Warning, module, __VA_ARGS__); } while (0)
+#define FIREBOLT_LOG_INFO(module, ...)     do { FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Info, module, __VA_ARGS__); } while (0)
+#define FIREBOLT_LOG_DEBUG(module, ...)    do { FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Debug, module, __VA_ARGS__); } while (0)

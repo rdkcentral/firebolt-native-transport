@@ -259,7 +259,7 @@ class Server
         if (dotPos != std::string::npos && dotPos + 3 < key.size() && key.substr(dotPos + 1, 2) == "on")
         {
             key[dotPos + 3] = std::tolower(key[dotPos + 3]); // make lower-case the first latter after ".on"
-            key.erase(dotPos + 1, 2);                        // erase "on"
+            key.erase(dotPos + 1, 2); // erase "on"
         }
         return key;
     }
@@ -422,7 +422,9 @@ public:
 #endif
 };
 
-class GatewayImpl : public Gateway, private IClientTransport, private IServerTransport
+class GatewayImpl : public Gateway,
+                    private IClientTransport,
+                    private IServerTransport
 {
 private:
     ConnectionChangeCallback connectionChangeListener;
@@ -453,16 +455,22 @@ public:
             config["log"]["level"] = userConfig["logLevel"];
         }
 
-        FireboltSDK::JSON::EnumType<Logger::LogLevel> logLevels = {{"Error", Logger::LogLevel::Error},
-                                                                   {"Warning", Logger::LogLevel::Warning},
-                                                                   {"Info", Logger::LogLevel::Info},
-                                                                   {"Debug", Logger::LogLevel::Debug}};
+        FireboltSDK::JSON::EnumType<Logger::LogLevel> logLevels = {
+            { "Error", Logger::LogLevel::Error },
+            { "Warning", Logger::LogLevel::Warning },
+            { "Info", Logger::LogLevel::Info },
+            { "Debug", Logger::LogLevel::Debug }
+        };
 
         nlohmann::json logInfo = config["log"];
         nlohmann::json logFormat = logInfo["format"];
         FireboltSDK::Logger::SetLogLevel(logLevels[logInfo["level"]]);
-        FireboltSDK::Logger::SetFormat(logFormat["ts"].get<bool>(), logFormat["location"].get<bool>(),
-                                       logFormat["function"].get<bool>(), logFormat["thread"].get<bool>());
+        FireboltSDK::Logger::SetFormat(
+            logFormat["ts"].get<bool>(),
+            logFormat["location"].get<bool>(),
+            logFormat["function"].get<bool>(),
+            logFormat["thread"].get<bool>()
+        );
         connectionChangeListener = onConnectionChange;
         std::string urlParamsKeys[] = {"RPCv2"};
         std::string urlParams;
