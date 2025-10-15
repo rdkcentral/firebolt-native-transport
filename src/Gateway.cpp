@@ -49,12 +49,25 @@ static Config config_g =  {
     .providerWaitTime = -1,
 };
 
-static Transport transport;
-
 using Timestamp = std::chrono::time_point<std::chrono::steady_clock>;
 using MessageID = uint32_t;
 
 Gateway::~Gateway() = default;
+
+class IClientTransport {
+public:
+    virtual ~IClientTransport() = default;
+    virtual MessageID GetNextMessageID() = 0;
+    virtual Firebolt::Error Send(const std::string& method, const nlohmann::json& parameters, MessageID id) = 0;
+};
+
+class IServerTransport {
+public:
+    virtual ~IServerTransport() = default;
+#ifdef ENABLE_MANAGE_API
+    virtual void SendResponse(unsigned id, const std::string& response) = 0;
+#endif
+};
 
 class Client
 {
@@ -81,38 +94,11 @@ class Client
     std::atomic<bool> running { false };
     std::thread watchdogThread;
 
-    void watchdog()
-    {
-        auto watchdogTimer = std::chrono::milliseconds(config_g.watchdogCycle_ms);
-        std::vector<std::shared_ptr<Caller>> outdated;
-
-        while (running) {
-            Timestamp now = std::chrono::steady_clock::now();
-            {
-                std::lock_guard lck(queue_mtx);
-                for (auto it = queue.begin(); it != queue.end();) {
-                    if (std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second->timestamp).count() > config_g.waitTime_ms) {
-                        outdated.push_back(it->second);
-                        it = queue.erase(it);
-                    } else {
-                        ++it;
-                    }
-                }
-            }
-            for (auto &c : outdated) {
-                std::unique_lock<std::mutex> lk(c->mtx);
-                std::cout << "Watchdog : message-id: " << c->id << " - timed out" << std::endl;
-                c->ready = true;
-                c->error = Firebolt::Error::Timedout;
-                c->waiter.notify_one();
-            }
-            outdated.clear();
-            std::this_thread::sleep_for(watchdogTimer);
-        }
-    }
+    IClientTransport& transport_;
 
 public:
-    Client()
+    Client(IClientTransport& transport)
+        : transport_(transport)
     {
     }
 
@@ -131,14 +117,14 @@ public:
 
     Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response)
     {
-        MessageID id = transport.GetNextMessageID();
+        MessageID id = transport_.GetNextMessageID();
         std::shared_ptr<Caller> c = std::make_shared<Caller>(id);
         {
             std::lock_guard lck(queue_mtx);
             queue[id] = c;
         }
 
-        Firebolt::Error result = transport.Send(method, parameters, id);
+        Firebolt::Error result = transport_.Send(method, parameters, id);
         if (result == Firebolt::Error::None) {
             {
                 std::unique_lock<std::mutex> lk(c->mtx);
@@ -184,6 +170,38 @@ public:
             std::cout << "No receiver for message-id: " << id << std::endl;
         }
     }
+
+private:
+    void watchdog()
+    {
+        auto watchdogTimer = std::chrono::milliseconds(config_g.watchdogCycle_ms);
+        std::vector<std::shared_ptr<Caller>> outdated;
+
+        while (running) {
+            Timestamp now = std::chrono::steady_clock::now();
+            {
+                std::lock_guard lck(queue_mtx);
+                for (auto it = queue.begin(); it != queue.end();) {
+                    if (std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second->timestamp).count() > config_g.waitTime_ms) {
+                        outdated.push_back(it->second);
+                        it = queue.erase(it);
+                    } else {
+                        ++it;
+                    }
+                }
+            }
+            for (auto &c : outdated) {
+                std::unique_lock<std::mutex> lk(c->mtx);
+                std::cout << "Watchdog : message-id: " << c->id << " - timed out" << std::endl;
+                c->ready = true;
+                c->error = Firebolt::Error::Timedout;
+                c->waiter.notify_one();
+            }
+            outdated.clear();
+            std::this_thread::sleep_for(watchdogTimer);
+        }
+    }
+
 };
 
 class Server
@@ -197,6 +215,8 @@ class Server
 
     EventMap eventMap;
     mutable std::mutex eventMap_mtx;
+
+    IServerTransport& transport_;
 
 #ifdef ENABLE_MANAGE_API
     using DispatchFunctionProvider = std::function<std::string(const nlohmann::json &parameters, void*)>;
@@ -228,6 +248,11 @@ class Server
     }
 
 public:
+    Server(IServerTransport& transport)
+        : transport_(transport)
+    {
+    }
+
     virtual ~Server()
     {
         {
@@ -304,7 +329,7 @@ public:
             it = std::find_if(it, methods.end(), [&methodName](const Method &m) { return m.name == methodName; });
             if (it != methods.end()) {
                 std::string response = it->lambda(parameters.dump(), it->usercb);
-                transport.SendResponse(id, response);
+                transport_.SendResponse(id, response);
                 break;
             }
         }
@@ -371,15 +396,24 @@ public:
 #endif
 };
 
-static Client client;
-static Server server;
-
-class GatewayImpl : public Gateway, IMessageReceiver, IConnectionReceiver
+class GatewayImpl : public Gateway,
+                    private IMessageReceiver,
+                    private IConnectionReceiver,
+                    private IClientTransport,
+                    private IServerTransport
 {
+private:
     ConnectionChangeCallback connectionChangeListener = nullptr;
+    Transport transport;
+    Client client;
+    Server server;
 
 public:
-    GatewayImpl() = default;
+    GatewayImpl()
+        : client(*this)
+        , server(*this)
+    {}
+
     ~GatewayImpl() = default;
 
     virtual Firebolt::Error Connect(const std::string& configLine, ConnectionChangeCallback listener) override
@@ -510,6 +544,24 @@ public:
     Firebolt::Error UnregisterProviderInterface(const std::string &interface, const std::string &method, void* usercb) override
     {
         return server.UnregisterProviderInterface(interface, method, usercb);
+    }
+#endif
+
+private:
+    MessageID GetNextMessageID() override
+    {
+        return transport.GetNextMessageID();
+    }
+
+    Firebolt::Error Send(const std::string& method, const nlohmann::json& parameters, MessageID id) override
+    {
+        return transport.Send(method, parameters, id);
+    }
+
+#ifdef ENABLE_MANAGE_API
+    void SendResponse(unsigned id, const std::string& response) override
+    {
+        transport.SendResponse(id, response);
     }
 #endif
 };
