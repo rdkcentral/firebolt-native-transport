@@ -37,7 +37,7 @@ class FIREBOLTTRANSPORT_EXPORT Gateway {
 public:
     virtual ~Gateway();
 
-    virtual Firebolt::Error Connect(const std::string& configLine, ConnectionChangeCallback listener) = 0;
+    virtual Firebolt::Error Connect(const std::string& configLine, ConnectionChangeCallback onConnectionChange) = 0;
     virtual Firebolt::Error Disconnect() = 0;
 
     virtual Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response) = 0;

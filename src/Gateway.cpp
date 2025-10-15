@@ -33,6 +33,7 @@
 #include <string>
 #include <string>
 #include <thread>
+#include <assert.h>
 
 namespace FireboltSDK::Transport {
 
@@ -397,13 +398,11 @@ public:
 };
 
 class GatewayImpl : public Gateway,
-                    private IMessageReceiver,
-                    private IConnectionReceiver,
                     private IClientTransport,
                     private IServerTransport
 {
 private:
-    ConnectionChangeCallback connectionChangeListener = nullptr;
+    ConnectionChangeCallback connectionChangeListener;
     Transport transport;
     Client client;
     Server server;
@@ -416,8 +415,10 @@ public:
 
     ~GatewayImpl() = default;
 
-    virtual Firebolt::Error Connect(const std::string& configLine, ConnectionChangeCallback listener) override
+    virtual Firebolt::Error Connect(const std::string& configLine, ConnectionChangeCallback onConnectionChange) override
     {
+        assert(onConnectionChange != nullptr);
+
         nlohmann::json userConfig = nlohmann::json::parse(configLine);
         nlohmann::json config;
         config["waitTime"] = config_g.waitTime_ms;
@@ -446,7 +447,7 @@ public:
             logFormat["function"].get<bool>(),
             logFormat["thread"].get<bool>()
         );
-        connectionChangeListener = listener;
+        connectionChangeListener = onConnectionChange;
         std::string urlParamsKeys[] = { "RPCv2" };
         std::string urlParams;
         for ( auto k : urlParamsKeys ) {
@@ -459,7 +460,10 @@ public:
         config_g.waitTime_ms = config["waitTime"].get<unsigned>();
         std::string url = config["wsUrl"].get<std::string>() + urlParams;
         FIREBOLT_LOG_INFO("Gateway", "Connecting to url = %s", url.c_str());
-        Firebolt::Error status = transport.Connect(url, this, this);
+        Firebolt::Error status = transport.Connect(
+            url,
+            [this](const nlohmann::json& message) { this->onMessage(message); },
+            [this](const bool connected, Firebolt::Error error) { this->onConnectionChange(connected, error); });
         client.Start();
         server.Start();
         return status;
@@ -468,26 +472,6 @@ public:
     virtual Firebolt::Error Disconnect() override
     {
         return transport.Disconnect();
-    }
-
-    virtual void Receive(const nlohmann::json& message) override
-    {
-        if (message.contains("method")) {
-            if (message.contains("id")) {
-                server.Request(message["id"], message["method"], message["params"]);
-            } else {
-                server.Notify(message["method"], message["params"]);
-            }
-        } else {
-            client.Response(message);
-        }
-    }
-
-    void ConnectionChanged(const bool connected, Firebolt::Error error) override
-    {
-        if (connectionChangeListener != nullptr) {
-            connectionChangeListener(connected, error);
-        }
     }
 
     Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response) override
@@ -548,6 +532,24 @@ public:
 #endif
 
 private:
+    void onMessage(const nlohmann::json& message)
+    {
+        if (message.contains("method")) {
+            if (message.contains("id")) {
+                server.Request(message["id"], message["method"], message["params"]);
+            } else {
+                server.Notify(message["method"], message["params"]);
+            }
+        } else {
+            client.Response(message);
+        }
+    }
+
+    void onConnectionChange(const bool connected, Firebolt::Error error)
+    {
+        connectionChangeListener(connected, error);
+    }
+
     MessageID GetNextMessageID() override
     {
         return transport.GetNextMessageID();

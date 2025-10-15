@@ -23,33 +23,27 @@
 
 #include <string>
 #include <iostream>
+#include <functional>
 #include <nlohmann/json.hpp>
 #include <websocketpp/config/asio_no_tls_client.hpp>
 #include <websocketpp/client.hpp>
 
 namespace FireboltSDK::Transport
 {
-class IMessageReceiver {
-public:
-    virtual void Receive(const nlohmann::json& message) = 0;
-};
-
-class IConnectionReceiver {
-public:
-    virtual void ConnectionChanged(const bool connected, Firebolt::Error error) = 0;
-};
+using MessageCallback = std::function<void(const nlohmann::json& message)>;
+using ConnectionCallback = std::function<void(const bool connected, Firebolt::Error error)>;
 
 class Transport
 {
 public:
     Transport() = default;
     Transport(const Transport&) = delete;
-    Transport& operator=(const Transport&) = delete;
     Transport(Transport&&) = delete;
+    Transport& operator=(const Transport&) = delete;
     Transport& operator=(Transport&&) = delete;
     virtual ~Transport();
 
-    Firebolt::Error Connect(std::string url, IMessageReceiver *messageReceiver, IConnectionReceiver *connectionReceiver);
+    Firebolt::Error Connect(std::string url, MessageCallback onMessage, ConnectionCallback onConnectionChange);
     Firebolt::Error Disconnect();
     void SetLogging(websocketpp::log::level include, websocketpp::log::level exclude = 0);
     unsigned GetNextMessageID();
@@ -66,18 +60,14 @@ private:
     void on_fail(websocketpp::client<websocketpp::config::asio_client>* c, websocketpp::connection_hdl hdl);
 
 private:
-    // websocketpp::client<websocketpp::config::asio_client>::connection_ptr connection_;
     enum class TransportState;
 
     unsigned id_counter_ = 0;
-
-    IMessageReceiver *messageReceiver = nullptr;
-    IConnectionReceiver *connectionReceiver = nullptr;
-
+    MessageCallback messageReceiver_;
+    ConnectionCallback connectionReceiver_;
     websocketpp::client<websocketpp::config::asio_client> client_;
-    websocketpp::lib::shared_ptr<websocketpp::lib::thread> m_thread;
-    websocketpp::connection_hdl m_hdl;
-
-    TransportState m_status;
+    websocketpp::lib::shared_ptr<websocketpp::lib::thread> connectionThread_;
+    websocketpp::connection_hdl connectionHandle_;
+    TransportState connectionStatus_;
 };
 }
