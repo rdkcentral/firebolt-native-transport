@@ -16,6 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #pragma once
 
 #include "error.h"
@@ -28,9 +29,14 @@
 
 namespace FireboltSDK::Transport
 {
-class ITransportReceiver {
+class IMessageReceiver {
 public:
     virtual void Receive(const nlohmann::json& message) = 0;
+};
+
+class IConnectionReceiver {
+public:
+    virtual void ConnectionChanged(const bool connected, Firebolt::Error error) = 0;
 };
 
 class Transport
@@ -43,8 +49,8 @@ public:
     Transport& operator=(Transport&&) = delete;
     virtual ~Transport();
 
-    Firebolt::Error Connect(std::string url);
-    void SetTransportReceiver(ITransportReceiver *transportReceiver);
+    Firebolt::Error Connect(std::string url, IMessageReceiver *messageReceiver, IConnectionReceiver *connectionReceiver);
+    Firebolt::Error Disconnect();
     unsigned GetNextMessageID();
     Firebolt::Error Send(const std::string &method, const nlohmann::json &params, const unsigned id);
     Firebolt::Error SendResponse(const unsigned id, const std::string &response);
@@ -63,15 +69,13 @@ private:
 
     unsigned id_counter_ = 0;
 
-    ITransportReceiver *transportReceiver_ = nullptr;
+    IMessageReceiver *messageReceiver = nullptr;
+    IConnectionReceiver *connectionReceiver = nullptr;
 
     websocketpp::client<websocketpp::config::asio_client> client_;
     websocketpp::lib::shared_ptr<websocketpp::lib::thread> m_thread;
     websocketpp::connection_hdl m_hdl;
 
-    TransportState  m_status;
-    std::string m_server;
-    std::string m_error_reason;
-
+    TransportState m_status;
 };
 }

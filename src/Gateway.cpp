@@ -19,9 +19,9 @@
 
 #include "Gateway.h"
 #include "Transport.h"
-#include "Transport.h"
 #include "error.h"
-#include "error.h"
+#include "TypesPriv.h"
+#include "Logger.h"
 #include <chrono>
 #include <condition_variable>
 #include <list>
@@ -40,10 +40,25 @@
 
 namespace FireboltSDK::Transport {
 
-Gateway* Gateway::instance = nullptr;
+struct Config
+{
+    unsigned waitTime_ms;
+    unsigned watchdogCycle_ms;
+    int providerWaitTime;
+};
+
+static Config config_g =  {
+    .waitTime_ms = 3000,
+    .watchdogCycle_ms = 500,
+    .providerWaitTime = -1,
+};
+
+static Transport transport;
 
 using Timestamp = std::chrono::time_point<std::chrono::steady_clock>;
 using MessageID = uint32_t;
+
+Gateway::~Gateway() = default;
 
 class Client
 {
@@ -66,8 +81,6 @@ class Client
 
     std::map <MessageID, std::shared_ptr<Caller>> queue;
     mutable std::mutex queue_mtx;
-    Config config;
-    Transport* transport_ = nullptr;
 
     std::atomic<bool> running { false };
     std::thread watchdogThread;
@@ -78,7 +91,7 @@ class Client
 
     void watchdog()
     {
-        auto watchdogTimer = std::chrono::milliseconds(config.watchdogCycle_ms);
+        auto watchdogTimer = std::chrono::milliseconds(config_g.watchdogCycle_ms);
         std::vector<std::shared_ptr<Caller>> outdated;
 
         while (running) {
@@ -86,7 +99,7 @@ class Client
             {
                 std::lock_guard lck(queue_mtx);
                 for (auto it = queue.begin(); it != queue.end();) {
-                    if (std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second->timestamp).count() > config.watchdogThreshold_ms) {
+                    if (std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second->timestamp).count() > config_g.waitTime_ms) {
                         outdated.push_back(it->second);
                         it = queue.erase(it);
                     } else {
@@ -107,16 +120,8 @@ class Client
     }
 
 public:
-    Client(const Config &config_)
-      : config(config_)
+    Client()
     {
-        running = true;
-        watchdogThread = std::thread(std::bind(&Client::watchdog, this));
-    }
-
-    void SetTransport(Transport* transport)
-    {
-        this->transport_ = transport;
     }
 
     virtual ~Client()
@@ -127,35 +132,41 @@ public:
         }
     }
 
+    void Start() {
+        running = true;
+        watchdogThread = std::thread(std::bind(&Client::watchdog, this));
+    }
+
 #ifdef UNIT_TEST
     Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response)
     {
         nlohmann::json message;
         message["jsonrpc"] = "2.0";
-        message["id"] = transport_->GetNextMessageID();
+        message["id"] = transport.GetNextMessageID();
         message["method"] = method;
         message["params"] = parameters;
-        Firebolt::Error result = jsonEngine.MockResponse(message);
-        if (result != Firebolt::Error::None) {
-            return result;
+        if (message["params"].empty()) {
+            Firebolt::Error result = jsonEngine.MockResponse(message);
+            if (result != Firebolt::Error::None) {
+                return result;
+            }
+            response = message["result"];
+        } else {
+            jsonEngine.MockRequest(message);
         }
-        response = message["result"];
         return Firebolt::Error::None;
     }
 #else
     Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response)
     {
-        if (transport_ == nullptr) {
-            return Firebolt::Error::NotConnected;
-        }
-        MessageID id = transport_->GetNextMessageID();
+        MessageID id = transport.GetNextMessageID();
         std::shared_ptr<Caller> c = std::make_shared<Caller>(id);
         {
             std::lock_guard lck(queue_mtx);
             queue[id] = c;
         }
 
-        Firebolt::Error result = transport_->Send(method, parameters, id);
+        Firebolt::Error result = transport.Send(method, parameters, id);
         if (result == Firebolt::Error::None) {
             {
                 std::unique_lock<std::mutex> lk(c->mtx);
@@ -206,10 +217,8 @@ public:
 
 class Server
 {
-    using DispatchFunctionEvent = std::function<void(void*, const nlohmann::json& parameters)>;
-
     struct CallbackDataEvent {
-        const DispatchFunctionEvent lambda;
+        const EventCallback lambda;
         void* usercb;
     };
 
@@ -234,8 +243,6 @@ class Server
     std::map<std::string, Interface> providers;
     mutable std::mutex providers_mtx;
 
-    Config config;
-
     std::string getKeyFromEvent(const std::string &event)
     {
         std::string key = event;
@@ -248,26 +255,21 @@ class Server
     }
 
 public:
-    Server(const Config &config_)
-      : config(config_)
-    {
-    }
-
     virtual ~Server()
     {
         std::lock_guard lck(eventMap_mtx);
         eventMap.clear();
     }
 
-    Firebolt::Error Subscribe(const std::string& event, std::function<void(void*, const nlohmann::json&)> callback, void* usercb)
+    void Start()
+    {
+    }
+
+    Firebolt::Error Subscribe(const std::string& event, EventCallback callback, void* usercb)
     {
         Firebolt::Error status = Firebolt::Error::General;
 
-        std::function<void(void* usercb, const nlohmann::json& parameters)> actualCallback = callback;
-        DispatchFunctionEvent implementation = [actualCallback](void* usercb, const nlohmann::json& parameters) {
-            actualCallback(usercb, parameters);
-        };
-        CallbackDataEvent callbackData = {implementation, usercb};
+        CallbackDataEvent callbackData = {callback, usercb};
 
         std::string key = getKeyFromEvent(event);
 
@@ -299,7 +301,7 @@ public:
         }
     }
 
-    void Request(Transport *transport, unsigned id, const std::string &method, const nlohmann::json &parameters)
+    void Request(unsigned id, const std::string &method, const nlohmann::json &parameters)
     {
         size_t dotPos = method.find('.');
         if (dotPos == std::string::npos) {
@@ -320,16 +322,15 @@ public:
             it = std::find_if(it, methods.end(), [&methodName](const Method &m) { return m.name == methodName; });
             if (it != methods.end()) {
                 std::string response = it->lambda(parameters.dump(), it->usercb);
-                transport->SendResponse(id, response);
+                transport.SendResponse(id, response);
                 break;
             }
         }
     }
 
-    template <typename CALLBACK>
-    Firebolt::Error RegisterProviderInterface(const std::string &fullMethod, const CALLBACK &callback, void* usercb)
+    Firebolt::Error RegisterProviderInterface(const std::string &fullMethod, ProviderCallback callback, void* usercb)
     {
-        uint32_t waitTime = config.DefaultWaitTime;
+        uint32_t waitTime = config_g.providerWaitTime;
 
         size_t dotPos = fullMethod.find('.');
         std::string interface = fullMethod.substr(0, dotPos);
@@ -383,34 +384,76 @@ public:
     }
 };
 
-class Gateway::GatewayImpl : public ITransportReceiver
+static Client client;
+static Server server;
+
+class GatewayImpl : public Gateway, IMessageReceiver, IConnectionReceiver
 {
-    Config config;
-    Client client;
-    Server server;
-    Transport* transport_;
+    OnConnectionChanged connectionChangeListener = nullptr;
 
 public:
-    GatewayImpl()
-      : client(config)
-      , server(config)
+    GatewayImpl() = default;
+    ~GatewayImpl() = default;
+
+    virtual Firebolt::Error Connect(const std::string& configLine, OnConnectionChanged listener) override
     {
+        nlohmann::json userConfig = nlohmann::json::parse(configLine);
+        nlohmann::json config;
+        config["waitTime"] = config_g.waitTime_ms;
+        config["log"] = nlohmann::json::parse(R"({ "level": "Info", "format": { "ts": true, "location": false, "function": true, "thread": true }})");
+        config["wsUrl"] = "ws://127.0.0.1:9998";
+        config["RPCv2"] = true;
+
+        config.merge_patch(userConfig);
+        if (userConfig.contains("logLevel")) {
+            config["log"]["level"] = userConfig["logLevel"];
+        }
+
+        FireboltSDK::JSON::EnumType<Logger::LogLevel> logLevels = {
+            { "Error", Logger::LogLevel::Error },
+            { "Warning", Logger::LogLevel::Warning },
+            { "Info", Logger::LogLevel::Info },
+            { "Debug", Logger::LogLevel::Debug }
+        };
+
+        nlohmann::json logInfo = config["log"];
+        nlohmann::json logFormat = logInfo["format"];
+        FireboltSDK::Logger::SetLogLevel(logLevels[logInfo["level"]]);
+        FireboltSDK::Logger::SetFormat(
+            logFormat["ts"].get<bool>(),
+            logFormat["location"].get<bool>(),
+            logFormat["function"].get<bool>(),
+            logFormat["thread"].get<bool>()
+        );
+        connectionChangeListener = listener;
+        std::string urlParamsKeys[] = { "RPCv2" };
+        std::string urlParams;
+        for ( auto k : urlParamsKeys ) {
+            if (config.contains(k)) {
+                if (config[k].is_boolean() ) {
+                    urlParams += (urlParams.empty() ? "?" : "&") + k + "=" + (config[k].get<bool>() ? "true" : "false");
+                }
+            }
+        }
+        config_g.waitTime_ms = config["waitTime"].get<unsigned>();
+        std::string url = config["wsUrl"].get<std::string>() + urlParams;
+        FIREBOLT_LOG_INFO("Gateway", "Connecting to url = %s", url.c_str());
+        Firebolt::Error status = transport.Connect(url, this, this);
+        client.Start();
+        server.Start();
+        return status;
     }
 
-    void TransportUpdated(Transport* transport)
+    virtual Firebolt::Error Disconnect() override
     {
-        this->transport_ = transport;
-        client.SetTransport(transport);
-        if (transport != nullptr) {
-            transport->SetTransportReceiver(this);
-        }
+        return transport.Disconnect();
     }
 
     virtual void Receive(const nlohmann::json& message) override
     {
         if (message.contains("method")) {
             if (message.contains("id")) {
-                server.Request(transport_, message["id"], message["method"], message["params"]);
+                server.Request(message["id"], message["method"], message["params"]);
             } else {
                 server.Notify(message["method"], message["params"]);
             }
@@ -419,15 +462,19 @@ public:
         }
     }
 
-    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response)
+    void ConnectionChanged(const bool connected, Firebolt::Error error) override
     {
-        if (transport_ == nullptr) {
-            return Firebolt::Error::NotConnected;
+        if (connectionChangeListener != nullptr) {
+            connectionChangeListener(connected, error);
         }
+    }
+
+    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response) override
+    {
         return client.Request(method, parameters, response);
     }
 
-    Firebolt::Error Subscribe(const std::string& event, std::function<void(void*, const nlohmann::json&)> callback, void* usercb)
+    Firebolt::Error Subscribe(const std::string& event, EventCallback callback, void* usercb) override
     {
         Firebolt::Error status = server.Subscribe(event, callback, usercb);
         if (status != Firebolt::Error::None) {
@@ -447,7 +494,7 @@ public:
         return status;
     }
 
-    Firebolt::Error Unsubscribe(const std::string& event)
+    Firebolt::Error Unsubscribe(const std::string& event) override
     {
         Firebolt::Error status = server.Unsubscribe(event);
         if (status != Firebolt::Error::None) {
@@ -463,8 +510,7 @@ public:
         return status;
     }
 
-    template <typename CALLBACK>
-    Firebolt::Error RegisterProviderInterface(const std::string &method, const CALLBACK& callback, void* usercb)
+    Firebolt::Error RegisterProviderInterface(const std::string &method, ProviderCallback callback, void* usercb) override
     {
         Firebolt::Error status = server.RegisterProviderInterface(method, callback, usercb);
         if (status != Firebolt::Error::None) {
@@ -473,65 +519,16 @@ public:
         return status;
     }
 
-    Firebolt::Error UnregisterProviderInterface(const std::string &interface, const std::string &method, void* usercb)
+    Firebolt::Error UnregisterProviderInterface(const std::string &interface, const std::string &method, void* usercb) override
     {
         return server.UnregisterProviderInterface(interface, method, usercb);
     }
 };
 
-Gateway& Gateway::Instance()
+Gateway& GetGatewayInstance()
 {
-    if (instance == nullptr) {
-        instance = new Gateway();
-    }
-    return *instance;
-}
-
-void Gateway::Dispose()
-{
-    if (instance != nullptr) {
-        delete instance;
-        instance = nullptr;
-    }
-}
-
-Gateway::Gateway()
-    : implementation(std::make_unique<GatewayImpl>())
-{
-    instance = this;
-}
-
-Gateway::~Gateway() = default;
-
-void Gateway::TransportUpdated(Transport* transport)
-{
-    implementation->TransportUpdated(transport);
-}
-
-Firebolt::Error Gateway::Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response)
-{
-    return implementation->Request(method, parameters, response);
-}
-
-Firebolt::Error Gateway::Subscribe(const std::string& event, std::function<void(void*, const nlohmann::json&)> callback, void* usercb)
-{
-    return implementation->Subscribe(event, callback, usercb);
-}
-
-Firebolt::Error Gateway::Unsubscribe(const std::string& event)
-{
-    return implementation->Unsubscribe(event);
-}
-
-template <typename CALLBACK>
-Firebolt::Error Gateway::RegisterProviderInterface(const std::string &method, const CALLBACK& callback, void* usercb)
-{
-    return implementation->RegisterProviderInterface(method, callback, usercb);
-}
-
-Firebolt::Error Gateway::UnregisterProviderInterface(const std::string &interface, const std::string &method, void* usercb)
-{
-    return implementation->UnregisterProviderInterface(interface, method, usercb);
+    static GatewayImpl instance;
+    return instance;
 }
 
 } // namespace Firebolt::Transport

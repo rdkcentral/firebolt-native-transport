@@ -23,45 +23,28 @@
 #include <string>
 #include <nlohmann/json.hpp>
 #include "error.h"
-#include "Transport.h"
 #include "firebolttransport_export.h"
 
 namespace FireboltSDK::Transport
 {
-
-struct Config
-{
-    static constexpr uint64_t watchdogThreshold_ms = 3000;
-    static constexpr uint64_t watchdogCycle_ms = 500;
-    static constexpr uint32_t DefaultWaitTime = -1;
-};
+using ProviderCallback = std::function<std::string(void* usercb, const nlohmann::json &params)>;
+using EventCallback = std::function<void(void* usercb, const nlohmann::json &params)>;
+using OnConnectionChanged = std::function<void(const bool connected, const Firebolt::Error error)>;
 
 class FIREBOLTTRANSPORT_EXPORT Gateway {
-private:
-    Gateway();
-
 public:
-    Gateway(const Gateway&) = delete;
-    Gateway& operator=(const Gateway&) = delete;
     virtual ~Gateway();
 
-    static Gateway& Instance();
-    static void Dispose();
+    virtual Firebolt::Error Connect(const std::string& configLine, OnConnectionChanged listener) = 0;
+    virtual Firebolt::Error Disconnect() = 0;
 
-    void TransportUpdated(Transport* transport);
+    virtual Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response) = 0;
+    virtual Firebolt::Error Subscribe(const std::string& event, EventCallback callback, void* usercb) = 0;
+    virtual Firebolt::Error Unsubscribe(const std::string& event) = 0;
 
-    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response);
-    Firebolt::Error Subscribe(const std::string& event, std::function<void(void*, const nlohmann::json&)> callback, void* usercb);
-    Firebolt::Error Unsubscribe(const std::string& event);
-
-    template <typename CALLBACK>
-    Firebolt::Error RegisterProviderInterface(const std::string &method, const CALLBACK& callback, void* usercb);
-    Firebolt::Error UnregisterProviderInterface(const std::string &interface, const std::string &method, void* usercb);
-
-private:
-    static Gateway *instance;
-
-    class GatewayImpl;
-    std::unique_ptr<GatewayImpl> implementation;
+    virtual Firebolt::Error RegisterProviderInterface(const std::string &method, ProviderCallback callback, void* usercb) = 0;
+    virtual Firebolt::Error UnregisterProviderInterface(const std::string &interface, const std::string &method, void* usercb) = 0;
 };
-} // namespace Firebolt::Transport
+
+FIREBOLTTRANSPORT_EXPORT Gateway& GetGatewayInstance();
+}
