@@ -173,6 +173,7 @@ Firebolt::Error Transport::Send(const std::string &method, const nlohmann::json 
     return Firebolt::Error::None;
 }
 
+#ifdef ENABLE_MANAGE_API
 Firebolt::Error Transport::SendResponse(const unsigned id, const std::string &response)
 {
     if (m_status != TransportState::Connected) {
@@ -192,6 +193,7 @@ Firebolt::Error Transport::SendResponse(const unsigned id, const std::string &re
     }
     return Firebolt::Error::None;
 }
+#endif
 
 void Transport::SetLogging(websocketpp::log::level include, websocketpp::log::level exclude)
 {

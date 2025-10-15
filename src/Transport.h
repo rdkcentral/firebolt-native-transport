@@ -51,10 +51,12 @@ public:
 
     Firebolt::Error Connect(std::string url, IMessageReceiver *messageReceiver, IConnectionReceiver *connectionReceiver);
     Firebolt::Error Disconnect();
+    void SetLogging(websocketpp::log::level include, websocketpp::log::level exclude = 0);
     unsigned GetNextMessageID();
     Firebolt::Error Send(const std::string &method, const nlohmann::json &params, const unsigned id);
+#ifdef ENABLE_MANAGE_API
     Firebolt::Error SendResponse(const unsigned id, const std::string &response);
-    void SetLogging(websocketpp::log::level include, websocketpp::log::level exclude = 0);
+#endif
 
 private:
     void start();

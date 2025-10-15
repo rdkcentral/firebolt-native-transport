@@ -227,6 +227,7 @@ class Server
     EventMap eventMap;
     mutable std::mutex eventMap_mtx;
 
+#ifdef ENABLE_MANAGE_API
     using DispatchFunctionProvider = std::function<std::string(const nlohmann::json &parameters, void*)>;
 
     struct Method {
@@ -240,8 +241,9 @@ class Server
         std::list<Method> methods;
     };
 
-    std::map<std::string, Interface> providers;
+    std::map<std::string, Interface> providerMap;
     mutable std::mutex providers_mtx;
+#endif
 
     std::string getKeyFromEvent(const std::string &event)
     {
@@ -257,8 +259,16 @@ class Server
 public:
     virtual ~Server()
     {
-        std::lock_guard lck(eventMap_mtx);
-        eventMap.clear();
+        {
+            std::lock_guard lck(eventMap_mtx);
+            eventMap.clear();
+        }
+#ifdef ENABLE_MANAGE_API
+        {
+            std::lock_guard lck(providers_mtx);
+            providerMap.clear();
+        }
+#endif
     }
 
     void Start()
@@ -301,6 +311,7 @@ public:
         }
     }
 
+#ifdef ENABLE_MANAGE_API
     void Request(unsigned id, const std::string &method, const nlohmann::json &parameters)
     {
         size_t dotPos = method.find('.');
@@ -310,8 +321,8 @@ public:
         std::string interface = method.substr(0, dotPos);;
         std::string methodName = method.substr(dotPos + 1);
         std::lock_guard lck(providers_mtx);
-        auto provider = providers.find(interface);
-        if (provider == providers.end()) {
+        auto provider = providerMap.find(interface);
+        if (provider == providerMap.end()) {
             return;
         }
         auto& methods = provider->second.methods;
@@ -345,7 +356,7 @@ public:
             return actualCallback(usercb, params);
         };
         std::lock_guard lck(providers_mtx);
-        if (providers.find(interface) == providers.end()) {
+        if (providerMap.find(interface) == providerMap.end()) {
             Interface i = {
                 .name = interface,
             };
@@ -354,9 +365,9 @@ public:
                 .lambda = lambda,
                 .usercb = usercb,
             });
-            providers[interface] = i;
+            providerMap[interface] = i;
         } else {
-            auto &i = providers[interface];
+            auto &i = providerMap[interface];
             auto it = std::find_if(i.methods.begin(), i.methods.end(), [&method, usercb](const Method &m) { return m.name == method && m.usercb == usercb; });
             if (it == i.methods.end()) {
                 i.methods.push_back({
@@ -373,7 +384,7 @@ public:
     {
         std::lock_guard lck(providers_mtx);
         try {
-            Interface &i = providers.at(interface);
+            Interface &i = providerMap.at(interface);
             auto it = std::find_if(i.methods.begin(), i.methods.end(), [&method, usercb](const Method &m) { return m.name == method && m.usercb == usercb; });
             if (it != i.methods.end()) {
                 i.methods.erase(it);
@@ -382,6 +393,11 @@ public:
         }
         return Firebolt::Error::None;
     }
+#else
+    void Request(unsigned id, const std::string &method, const nlohmann::json &parameters)
+    {
+    }
+#endif
 };
 
 static Client client;
@@ -389,13 +405,13 @@ static Server server;
 
 class GatewayImpl : public Gateway, IMessageReceiver, IConnectionReceiver
 {
-    OnConnectionChanged connectionChangeListener = nullptr;
+    ConnectionChangeCallback connectionChangeListener = nullptr;
 
 public:
     GatewayImpl() = default;
     ~GatewayImpl() = default;
 
-    virtual Firebolt::Error Connect(const std::string& configLine, OnConnectionChanged listener) override
+    virtual Firebolt::Error Connect(const std::string& configLine, ConnectionChangeCallback listener) override
     {
         nlohmann::json userConfig = nlohmann::json::parse(configLine);
         nlohmann::json config;
@@ -510,6 +526,7 @@ public:
         return status;
     }
 
+#ifdef ENABLE_MANAGE_API
     Firebolt::Error RegisterProviderInterface(const std::string &method, ProviderCallback callback, void* usercb) override
     {
         Firebolt::Error status = server.RegisterProviderInterface(method, callback, usercb);
@@ -523,6 +540,7 @@ public:
     {
         return server.UnregisterProviderInterface(interface, method, usercb);
     }
+#endif
 };
 
 Gateway& GetGatewayInstance()

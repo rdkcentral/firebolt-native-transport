@@ -27,23 +27,27 @@
 
 namespace FireboltSDK::Transport
 {
-using ProviderCallback = std::function<std::string(void* usercb, const nlohmann::json &params)>;
 using EventCallback = std::function<void(void* usercb, const nlohmann::json &params)>;
-using OnConnectionChanged = std::function<void(const bool connected, const Firebolt::Error error)>;
+using ConnectionChangeCallback = std::function<void(const bool connected, const Firebolt::Error error)>;
+#ifdef ENABLE_MANAGE_API
+using ProviderCallback = std::function<std::string(void* usercb, const nlohmann::json &params)>;
+#endif
 
 class FIREBOLTTRANSPORT_EXPORT Gateway {
 public:
     virtual ~Gateway();
 
-    virtual Firebolt::Error Connect(const std::string& configLine, OnConnectionChanged listener) = 0;
+    virtual Firebolt::Error Connect(const std::string& configLine, ConnectionChangeCallback listener) = 0;
     virtual Firebolt::Error Disconnect() = 0;
 
     virtual Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response) = 0;
     virtual Firebolt::Error Subscribe(const std::string& event, EventCallback callback, void* usercb) = 0;
     virtual Firebolt::Error Unsubscribe(const std::string& event) = 0;
 
+#ifdef ENABLE_MANAGE_API
     virtual Firebolt::Error RegisterProviderInterface(const std::string &method, ProviderCallback callback, void* usercb) = 0;
     virtual Firebolt::Error UnregisterProviderInterface(const std::string &interface, const std::string &method, void* usercb) = 0;
+#endif
 };
 
 FIREBOLTTRANSPORT_EXPORT Gateway& GetGatewayInstance();
