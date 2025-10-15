@@ -18,20 +18,22 @@
 
 #pragma once
 
-#include "firebolttransport_export.h"
 #include "error.h"
+#include "firebolttransport_export.h"
 #include <stdint.h>
 #include <string>
 #include <typeinfo>
 
 namespace FireboltSDK
 {
-class FIREBOLTTRANSPORT_EXPORT Logger {
+class FIREBOLTTRANSPORT_EXPORT Logger
+{
 private:
     static constexpr uint16_t MaxBufSize = 1024;
 
 public:
-    enum class LogLevel : uint8_t {
+    enum class LogLevel : uint8_t
+    {
         Error,
         Warning,
         Info,
@@ -41,14 +43,15 @@ public:
 
 public:
     Logger() = default;
-    Logger(const Logger&) = delete;
-    Logger& operator=(const Logger&) = delete;
+    Logger(const Logger &) = delete;
+    Logger &operator=(const Logger &) = delete;
     ~Logger() = default;
 
 public:
     static void SetLogLevel(LogLevel logLevel);
-    static void SetFormat(bool addTs,  bool addLocation, bool addFunction, bool addThreadId);
-    static void Log(LogLevel logLevel, const std::string& module, const std::string file, const std::string function, const uint16_t line, const std::string& format, ...);
+    static void SetFormat(bool addTs, bool addLocation, bool addFunction, bool addThreadId);
+    static void Log(LogLevel logLevel, const std::string &module, const std::string file, const std::string function,
+                    const uint16_t line, const std::string &format, ...);
 
 private:
     static LogLevel _logLevel;
@@ -57,10 +60,30 @@ private:
     static bool formatter_addLocation;
     static bool formatter_addFunction;
 };
-}
+} // namespace FireboltSDK
 
-#define FIREBOLT_LOG(level, module, ...)   do { FireboltSDK::Logger::Log(level, module, __FILE__, __func__, __LINE__, __VA_ARGS__); } while (0)
-#define FIREBOLT_LOG_ERROR(module, ...)    do { FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Error, module, __VA_ARGS__); } while (0)
-#define FIREBOLT_LOG_WARNING(module, ...)  do { FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Warning, module, __VA_ARGS__); } while (0)
-#define FIREBOLT_LOG_INFO(module, ...)     do { FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Info, module, __VA_ARGS__); } while (0)
-#define FIREBOLT_LOG_DEBUG(module, ...)    do { FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Debug, module, __VA_ARGS__); } while (0)
+#define FIREBOLT_LOG(level, module, ...)                                                                               \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        FireboltSDK::Logger::Log(level, module, __FILE__, __func__, __LINE__, __VA_ARGS__);                            \
+    } while (0)
+#define FIREBOLT_LOG_ERROR(module, ...)                                                                                \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Error, module, __VA_ARGS__);                                       \
+    } while (0)
+#define FIREBOLT_LOG_WARNING(module, ...)                                                                              \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Warning, module, __VA_ARGS__);                                     \
+    } while (0)
+#define FIREBOLT_LOG_INFO(module, ...)                                                                                 \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Info, module, __VA_ARGS__);                                        \
+    } while (0)
+#define FIREBOLT_LOG_DEBUG(module, ...)                                                                                \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Debug, module, __VA_ARGS__);                                       \
+    } while (0)

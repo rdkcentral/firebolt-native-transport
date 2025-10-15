@@ -32,20 +32,20 @@ using SubscriptionId = std::uint64_t;
 template <typename T> class Result
 {
 public:
-    explicit Result(const T& value) : value_{value}, error_{Error::None} {}
-    explicit Result(const Error& error) : value_{}, error_{error} {}
+    explicit Result(const T &value) : value_{value}, error_{Error::None} {}
+    explicit Result(const Error &error) : value_{}, error_{error} {}
 
     bool has_value() const { return value_.has_value(); }
     explicit operator bool() const { return has_value(); }
-    T& value() & { return *value_; }
-    const T& value() const& { return *value_; }
-    const T* operator->() const { return &value(); }
-    T* operator->() { return &value(); }
-    const T& operator*() const& { return value(); }
-    T& operator*() & { return value(); }
-    T value_or(T&& defaultValue) const& { return value_.value_or(defaultValue); }
-    const Error& error() const& { return error_; }
-    Error& error() & { return error_; }
+    T &value() & { return *value_; }
+    const T &value() const & { return *value_; }
+    const T *operator->() const { return &value(); }
+    T *operator->() { return &value(); }
+    const T &operator*() const & { return value(); }
+    T &operator*() & { return value(); }
+    T value_or(T &&defaultValue) const & { return value_.value_or(defaultValue); }
+    const Error &error() const & { return error_; }
+    Error &error() & { return error_; }
 
 private:
     std::optional<T> value_;
@@ -55,11 +55,11 @@ private:
 template <> class Result<void>
 {
 public:
-    explicit Result(const Error& error) : error_{error} {}
+    explicit Result(const Error &error) : error_{error} {}
 
     explicit operator bool() const { return Firebolt::Error::None == error_; }
-    const Error& error() const& { return error_; }
-    Error& error() & { return error_; }
+    const Error &error() const & { return error_; }
+    Error &error() & { return error_; }
 
 private:
     Error error_;

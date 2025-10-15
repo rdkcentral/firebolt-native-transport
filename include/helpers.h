@@ -19,10 +19,10 @@
 
 #pragma once
 
-#include "firebolttransport_export.h"
 #include "Gateway.h"
 #include "common/types.h"
 #include "error.h"
+#include "firebolttransport_export.h"
 #include <any>
 #include <map>
 #include <mutex>
@@ -33,7 +33,8 @@ namespace Firebolt::Helpers
 {
 
 template <typename JsonType, typename PropertyType>
-FIREBOLTTRANSPORT_EXPORT Result<PropertyType> get(const std::string& methodName, const nlohmann::json& parameters = nlohmann::json({}))
+FIREBOLTTRANSPORT_EXPORT Result<PropertyType> get(const std::string &methodName,
+                                                  const nlohmann::json &parameters = nlohmann::json({}))
 {
     nlohmann::json result;
     Error status = FireboltSDK::Transport::GetGatewayInstance().Request(methodName, parameters, result);
@@ -46,8 +47,9 @@ FIREBOLTTRANSPORT_EXPORT Result<PropertyType> get(const std::string& methodName,
     return Result<PropertyType>{jsonResult.Value()};
 }
 
-FIREBOLTTRANSPORT_EXPORT Result<void> invoke(const std::string& methodName, const nlohmann::json& parameters = nlohmann::json({}));
-FIREBOLTTRANSPORT_EXPORT Result<void> set(const std::string& methodName, const nlohmann::json& parameters);
+FIREBOLTTRANSPORT_EXPORT Result<void> invoke(const std::string &methodName,
+                                             const nlohmann::json &parameters = nlohmann::json({}));
+FIREBOLTTRANSPORT_EXPORT Result<void> set(const std::string &methodName, const nlohmann::json &parameters);
 
 struct SubscriptionData
 {
@@ -56,9 +58,9 @@ struct SubscriptionData
 };
 
 template <typename JsonType, typename PropertyType>
-void onPropertyChangedCallback(void* subscriptionDataPtr, const nlohmann::json& jsonResponse)
+void onPropertyChangedCallback(void *subscriptionDataPtr, const nlohmann::json &jsonResponse)
 {
-    SubscriptionData* subscriptionData = reinterpret_cast<SubscriptionData*>(subscriptionDataPtr);
+    SubscriptionData *subscriptionData = reinterpret_cast<SubscriptionData *>(subscriptionDataPtr);
     std::function<void(PropertyType)> notifier =
         std::any_cast<std::function<void(PropertyType)>>(subscriptionData->notification);
     JsonType jsonType;
@@ -77,14 +79,15 @@ protected:
 
     Result<void> unsubscribe(SubscriptionId id);
     template <typename JsonType, typename PropertyType>
-    Result<SubscriptionId> subscribe(const std::string& eventName, std::function<void(PropertyType)>&& notification)
+    Result<SubscriptionId> subscribe(const std::string &eventName, std::function<void(PropertyType)> &&notification)
     {
         std::lock_guard<std::mutex> lock(mutex_);
         subscriptions_[currentId_] = SubscriptionData{eventName, std::move(notification)};
-        void* notificationPtr = reinterpret_cast<void*>(&subscriptions_[currentId_]);
-        Error status = FireboltSDK::Transport::GetGatewayInstance().Subscribe(eventName,
-                                                               onPropertyChangedCallback<JsonType, PropertyType>,
-                                                               notificationPtr);
+        void *notificationPtr = reinterpret_cast<void *>(&subscriptions_[currentId_]);
+        Error status =
+            FireboltSDK::Transport::GetGatewayInstance().Subscribe(eventName,
+                                                                   onPropertyChangedCallback<JsonType, PropertyType>,
+                                                                   notificationPtr);
         if (Error::None != status)
         {
             subscriptions_.erase(currentId_);
@@ -98,4 +101,4 @@ private:
     std::map<uint64_t, SubscriptionData> subscriptions_;
     uint64_t currentId_{0};
 };
-} // namespace Firebolt::Transport
+} // namespace Firebolt::Helpers

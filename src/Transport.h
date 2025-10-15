@@ -21,26 +21,26 @@
 
 #include "error.h"
 
-#include <string>
-#include <iostream>
 #include <functional>
+#include <iostream>
 #include <nlohmann/json.hpp>
-#include <websocketpp/config/asio_no_tls_client.hpp>
+#include <string>
 #include <websocketpp/client.hpp>
+#include <websocketpp/config/asio_no_tls_client.hpp>
 
 namespace FireboltSDK::Transport
 {
-using MessageCallback = std::function<void(const nlohmann::json& message)>;
+using MessageCallback = std::function<void(const nlohmann::json &message)>;
 using ConnectionCallback = std::function<void(const bool connected, Firebolt::Error error)>;
 
 class Transport
 {
 public:
     Transport() = default;
-    Transport(const Transport&) = delete;
-    Transport(Transport&&) = delete;
-    Transport& operator=(const Transport&) = delete;
-    Transport& operator=(Transport&&) = delete;
+    Transport(const Transport &) = delete;
+    Transport(Transport &&) = delete;
+    Transport &operator=(const Transport &) = delete;
+    Transport &operator=(Transport &&) = delete;
     virtual ~Transport();
 
     Firebolt::Error Connect(std::string url, MessageCallback onMessage, ConnectionCallback onConnectionChange);
@@ -54,10 +54,11 @@ public:
 
 private:
     void start();
-    void on_message(websocketpp::connection_hdl hdl, websocketpp::client<websocketpp::config::asio_client>::message_ptr msg);
-    void on_open(websocketpp::client<websocketpp::config::asio_client>* c, websocketpp::connection_hdl hdl);
-    void on_close(websocketpp::client<websocketpp::config::asio_client>* c, websocketpp::connection_hdl hdl);
-    void on_fail(websocketpp::client<websocketpp::config::asio_client>* c, websocketpp::connection_hdl hdl);
+    void on_message(websocketpp::connection_hdl hdl,
+                    websocketpp::client<websocketpp::config::asio_client>::message_ptr msg);
+    void on_open(websocketpp::client<websocketpp::config::asio_client> *c, websocketpp::connection_hdl hdl);
+    void on_close(websocketpp::client<websocketpp::config::asio_client> *c, websocketpp::connection_hdl hdl);
+    void on_fail(websocketpp::client<websocketpp::config::asio_client> *c, websocketpp::connection_hdl hdl);
 
 private:
     enum class TransportState;
@@ -70,4 +71,4 @@ private:
     websocketpp::connection_hdl connectionHandle_;
     TransportState connectionStatus_;
 };
-}
+} // namespace FireboltSDK::Transport

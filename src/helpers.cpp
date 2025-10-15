@@ -22,20 +22,22 @@
 namespace Firebolt::Helpers
 {
 
-Result<void> set(const std::string& methodName, const nlohmann::json& parameters)
+Result<void> set(const std::string &methodName, const nlohmann::json &parameters)
 {
     nlohmann::json result;
     nlohmann::json p;
-    if (parameters.is_object()) {
+    if (parameters.is_object())
+    {
         p = parameters;
     }
-    else {
+    else
+    {
         p["value"] = parameters;
     }
     return Result<void>{FireboltSDK::Transport::GetGatewayInstance().Request(methodName, p, result)};
 }
 
-Result<void> invoke(const std::string& methodName, const nlohmann::json& parameters)
+Result<void> invoke(const std::string &methodName, const nlohmann::json &parameters)
 {
     nlohmann::json result;
     return Result<void>{FireboltSDK::Transport::GetGatewayInstance().Request(methodName, parameters, result)};
@@ -48,7 +50,7 @@ SubscriptionHelper::~SubscriptionHelper()
 
 void SubscriptionHelper::unsubscribeAll()
 {
-    for (auto& subscription : subscriptions_)
+    for (auto &subscription : subscriptions_)
     {
         FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(subscription.second.eventName);
     }
@@ -67,4 +69,4 @@ Result<void> SubscriptionHelper::unsubscribe(SubscriptionId id)
     subscriptions_.erase(it);
     return Result<void>{errorStatus};
 }
-} // namespace Firebolt::Transport
+} // namespace Firebolt::Helpers

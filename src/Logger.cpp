@@ -15,60 +15,65 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#include "error.h"
 #include "Logger.h"
-#include <stdio.h>
-#include <unistd.h>
-#include <cstdarg>
-#include <map>
+#include "error.h"
 #include <chrono>
-#include <ctime>
-#include <sys/time.h>
+#include <cstdarg>
 #include <cstring>
+#include <ctime>
+#include <map>
+#include <stdio.h>
+#include <sys/time.h>
+#include <unistd.h>
 #ifdef ENABLE_SYSLOG
 #include <syslog.h>
 #endif
 
-namespace FireboltSDK {
+namespace FireboltSDK
+{
 /* static */ Logger::LogLevel Logger::_logLevel = Logger::LogLevel::Error;
 /* static */ bool Logger::formatter_addTs = true;
 /* static */ bool Logger::formatter_addThreadId = true;
 /* static */ bool Logger::formatter_addLocation = false;
 /* static */ bool Logger::formatter_addFunction = true;
 
-std::map<FireboltSDK::Logger::LogLevel, const char*> _logLevelNames = {
-    { Logger::LogLevel::Error, "Error" },
-    { Logger::LogLevel::Warning, "Warning" },
-    { Logger::LogLevel::Info, "Info" },
-    { Logger::LogLevel::Debug, "Debug" },
+std::map<FireboltSDK::Logger::LogLevel, const char *> _logLevelNames = {
+    {Logger::LogLevel::Error, "Error"},
+    {Logger::LogLevel::Warning, "Warning"},
+    {Logger::LogLevel::Info, "Info"},
+    {Logger::LogLevel::Debug, "Debug"},
 };
 
 #ifdef ENABLE_SYSLOG
 std::map<FireboltSDK::Logger::LogLevel, int> _logLevel2SysLog = {
-    { Logger::LogLevel::Error,   LOG_ERR },
-    { Logger::LogLevel::Warning, LOG_WARNING },
-    { Logger::LogLevel::Info,    LOG_INFO },
-    { Logger::LogLevel::Debug,   LOG_DEBUG },
+    {Logger::LogLevel::Error, LOG_ERR},
+    {Logger::LogLevel::Warning, LOG_WARNING},
+    {Logger::LogLevel::Info, LOG_INFO},
+    {Logger::LogLevel::Debug, LOG_DEBUG},
 };
 #endif
 
 void Logger::SetLogLevel(Logger::LogLevel logLevel)
 {
-    if (logLevel < Logger::LogLevel::MaxLevel) {
+    if (logLevel < Logger::LogLevel::MaxLevel)
+    {
         _logLevel = logLevel;
     }
 }
 
-void Logger::SetFormat(bool addTs,  bool addLocation, bool addFunction, bool addThreadId) {
+void Logger::SetFormat(bool addTs, bool addLocation, bool addFunction, bool addThreadId)
+{
     formatter_addTs = addTs;
     formatter_addLocation = addLocation;
     formatter_addFunction = addFunction;
     formatter_addThreadId = addThreadId;
 }
 
-void Logger::Log(LogLevel logLevel, const std::string& module, const std::string file, const std::string function, const uint16_t line, const std::string& format, ...)
+void Logger::Log(LogLevel logLevel, const std::string &module, const std::string file, const std::string function,
+                 const uint16_t line, const std::string &format, ...)
 {
-    if (logLevel > _logLevel) {
+    if (logLevel > _logLevel)
+    {
         return;
     }
 
@@ -82,51 +87,67 @@ void Logger::Log(LogLevel logLevel, const std::string& module, const std::string
 
     uint32_t position = (length >= Logger::MaxBufSize) ? (Logger::MaxBufSize - 1) : length;
     msg[position] = '\0';
-    if ( msg[position - 1] == '\n' ) {
+    if (msg[position - 1] == '\n')
+    {
         msg[position - 1] = '\0';
     }
 
     std::string time;
-    if (formatter_addTs) {
+    if (formatter_addTs)
+    {
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
         std::time_t t = std::chrono::system_clock::to_time_t(now);
         std::tm tm;
         localtime_r(&t, &tm);
         char timeBuf[16];
-        snprintf(timeBuf, sizeof(timeBuf), "%02d:%02d:%02d.%03ld", tm.tm_hour, tm.tm_min, tm.tm_sec, static_cast<long>(ms.count()));
+        snprintf(timeBuf, sizeof(timeBuf), "%02d:%02d:%02d.%03ld", tm.tm_hour, tm.tm_min, tm.tm_sec,
+                 static_cast<long>(ms.count()));
         time = timeBuf;
     }
 
     const std::string levelName = _logLevelNames[logLevel];
 
     std::string fileName;
-    if (formatter_addLocation) {
+    if (formatter_addLocation)
+    {
         fileName = strrchr(file.c_str(), '/');
-        if (fileName.empty()) {
+        if (fileName.empty())
+        {
             fileName = file;
-        } else {
+        }
+        else
+        {
             fileName = fileName.substr(1);
         }
     }
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-truncation"
-    char formattedMsg[Logger::MaxBufSize] = { 0 };
+    char formattedMsg[Logger::MaxBufSize] = {0};
     size_t len = 0;
-    if (formatter_addTs) {
+    if (formatter_addTs)
+    {
         len += snprintf(formattedMsg + len, sizeof(formattedMsg) - len, "%s: ", time.c_str());
     }
     len += snprintf(formattedMsg + len, sizeof(formattedMsg) - len, "[%s|%s]", module.c_str(), levelName.c_str());
-    if (formatter_addLocation || formatter_addFunction) {
-        if (formatter_addLocation && formatter_addFunction) {
-            len += snprintf(formattedMsg + len, sizeof(formattedMsg) - len, "[%s:%d,%s]", fileName.c_str(), line, function.c_str());
-        } else if (formatter_addLocation) {
+    if (formatter_addLocation || formatter_addFunction)
+    {
+        if (formatter_addLocation && formatter_addFunction)
+        {
+            len += snprintf(formattedMsg + len, sizeof(formattedMsg) - len, "[%s:%d,%s]", fileName.c_str(), line,
+                            function.c_str());
+        }
+        else if (formatter_addLocation)
+        {
             len += snprintf(formattedMsg + len, sizeof(formattedMsg) - len, "[%s:%d]", fileName.c_str(), line);
-        } else {
+        }
+        else
+        {
             len += snprintf(formattedMsg + len, sizeof(formattedMsg) - len, "[%s()]", function.c_str());
         }
     }
-    if (formatter_addThreadId) {
+    if (formatter_addThreadId)
+    {
         len += snprintf(formattedMsg + len, sizeof(formattedMsg) - len, "<tid:%u>", ::gettid());
     }
     len += snprintf(formattedMsg + len, sizeof(formattedMsg) - len, ": %s", msg);
@@ -139,4 +160,4 @@ void Logger::Log(LogLevel logLevel, const std::string& module, const std::string
     fflush(stderr);
 #endif
 }
-}
+} // namespace FireboltSDK
