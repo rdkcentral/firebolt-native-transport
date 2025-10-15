@@ -48,7 +48,6 @@ list(APPEND CMAKE_MODULE_PATH
         "${SYSROOT_PATH}/tools/cmake")
 
 if (ENABLE_UNIT_TESTS)
-    add_compile_definitions(UNIT_TEST UT_OPEN_RPC_FILE="firebolt-open-rpc.json")
 endif ()
 
 add_subdirectory(src)

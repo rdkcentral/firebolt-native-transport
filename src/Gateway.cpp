@@ -34,10 +34,6 @@
 #include <string>
 #include <thread>
 
-#ifdef UNIT_TEST
-#include "json_engine.h"
-#endif
-
 namespace FireboltSDK::Transport {
 
 struct Config
@@ -84,10 +80,6 @@ class Client
 
     std::atomic<bool> running { false };
     std::thread watchdogThread;
-
-#ifdef UNIT_TEST
-    JsonEngine jsonEngine;
-#endif
 
     void watchdog()
     {
@@ -137,26 +129,6 @@ public:
         watchdogThread = std::thread(std::bind(&Client::watchdog, this));
     }
 
-#ifdef UNIT_TEST
-    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response)
-    {
-        nlohmann::json message;
-        message["jsonrpc"] = "2.0";
-        message["id"] = transport.GetNextMessageID();
-        message["method"] = method;
-        message["params"] = parameters;
-        if (message["params"].empty()) {
-            Firebolt::Error result = jsonEngine.MockResponse(message);
-            if (result != Firebolt::Error::None) {
-                return result;
-            }
-            response = message["result"];
-        } else {
-            jsonEngine.MockRequest(message);
-        }
-        return Firebolt::Error::None;
-    }
-#else
     Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response)
     {
         MessageID id = transport.GetNextMessageID();
@@ -185,7 +157,6 @@ public:
 
         return result;
     }
-#endif
 
     bool IdRequested(MessageID id)
     {
