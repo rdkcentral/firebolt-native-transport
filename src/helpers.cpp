@@ -18,29 +18,51 @@
  */
 
 #include "helpers.h"
+#include "Gateway.h"
 
 namespace Firebolt::Helpers
 {
+class Helper : public IHelper {
+public:
+    ~Helper() override = default;
 
-Result<void> set(const std::string &methodName, const nlohmann::json &parameters)
-{
-    nlohmann::json result;
-    nlohmann::json p;
-    if (parameters.is_object())
+    Result<nlohmann::json> get(const std::string& methodName, const nlohmann::json& parameters) override
     {
-        p = parameters;
+        nlohmann::json result;
+        Error status = FireboltSDK::Transport::GetGatewayInstance().Request(methodName, parameters, result);
+        if (status != Error::None)
+        {
+            return Result<nlohmann::json>{status};
+        }
+        return Result<nlohmann::json>{result};
     }
-    else
-    {
-        p["value"] = parameters;
-    }
-    return Result<void>{FireboltSDK::Transport::GetGatewayInstance().Request(methodName, p, result)};
-}
 
-Result<void> invoke(const std::string &methodName, const nlohmann::json &parameters)
+    Result<void> set(const std::string& methodName, const nlohmann::json& parameters) override
+    {
+        nlohmann::json result;
+        nlohmann::json p;
+        if (parameters.is_object())
+        {
+            p = parameters;
+        }
+        else
+        {
+            p["value"] = parameters;
+        }
+        return Result<void>{FireboltSDK::Transport::GetGatewayInstance().Request(methodName, p, result)};
+    }
+
+    Result<void> invoke(const std::string& methodName, const nlohmann::json& parameters) override
+    {
+        nlohmann::json result;
+        return Result<void>{FireboltSDK::Transport::GetGatewayInstance().Request(methodName, parameters, result)};
+    }
+};
+
+IHelper& GetHelperInstance()
 {
-    nlohmann::json result;
-    return Result<void>{FireboltSDK::Transport::GetGatewayInstance().Request(methodName, parameters, result)};
+    static Helper instance;
+    return instance;
 }
 
 SubscriptionHelper::~SubscriptionHelper()

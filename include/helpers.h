@@ -26,30 +26,51 @@
 #include <any>
 #include <map>
 #include <mutex>
+#include <nlohmann/json.hpp>
 #include <optional>
+#include <string>
 #include <type_traits>
 
 namespace Firebolt::Helpers
 {
 
+class IHelper {
+public:
+    virtual ~IHelper() = default;
+
+    virtual Result<nlohmann::json> get(const std::string& methodName, const nlohmann::json& parameters) = 0;
+    virtual Result<void> set(const std::string& methodName, const nlohmann::json& parameters) = 0;
+    virtual Result<void> invoke(const std::string& methodName, const nlohmann::json& parameters) = 0;
+};
+
+FIREBOLTTRANSPORT_EXPORT IHelper& GetHelperInstance();
+
 template <typename JsonType, typename PropertyType>
 FIREBOLTTRANSPORT_EXPORT Result<PropertyType> get(const std::string &methodName,
                                                   const nlohmann::json &parameters = nlohmann::json({}))
 {
-    nlohmann::json result;
-    Error status = FireboltSDK::Transport::GetGatewayInstance().Request(methodName, parameters, result);
-    if (status != Error::None)
+    Result<nlohmann::json> result = GetHelperInstance().get(methodName, parameters);
+    if (!result)
     {
-        return Result<PropertyType>{status};
+        return Result<PropertyType>{result.error()};
     }
+
     JsonType jsonResult;
-    jsonResult.FromJson(result);
+    jsonResult.FromJson(*result);
     return Result<PropertyType>{jsonResult.Value()};
 }
 
-FIREBOLTTRANSPORT_EXPORT Result<void> invoke(const std::string &methodName,
-                                             const nlohmann::json &parameters = nlohmann::json({}));
-FIREBOLTTRANSPORT_EXPORT Result<void> set(const std::string &methodName, const nlohmann::json &parameters);
+FIREBOLTTRANSPORT_EXPORT inline Result<void> invoke(const std::string &methodName,
+                                             const nlohmann::json &parameters = nlohmann::json({}))
+{
+    return GetHelperInstance().invoke(methodName, parameters);
+}
+
+FIREBOLTTRANSPORT_EXPORT inline Result<void> set(const std::string &methodName,
+                                          const nlohmann::json &parameters)
+{
+    return GetHelperInstance().set(methodName, parameters);
+}
 
 struct SubscriptionData
 {
