@@ -34,44 +34,6 @@
 namespace Firebolt::Helpers
 {
 
-class IHelper {
-public:
-    virtual ~IHelper() = default;
-
-    virtual Result<nlohmann::json> get(const std::string& methodName, const nlohmann::json& parameters) = 0;
-    virtual Result<void> set(const std::string& methodName, const nlohmann::json& parameters) = 0;
-    virtual Result<void> invoke(const std::string& methodName, const nlohmann::json& parameters) = 0;
-};
-
-FIREBOLTTRANSPORT_EXPORT IHelper& GetHelperInstance();
-
-template <typename JsonType, typename PropertyType>
-FIREBOLTTRANSPORT_EXPORT Result<PropertyType> get(const std::string &methodName,
-                                                  const nlohmann::json &parameters = nlohmann::json({}))
-{
-    Result<nlohmann::json> result = GetHelperInstance().get(methodName, parameters);
-    if (!result)
-    {
-        return Result<PropertyType>{result.error()};
-    }
-
-    JsonType jsonResult;
-    jsonResult.FromJson(*result);
-    return Result<PropertyType>{jsonResult.Value()};
-}
-
-FIREBOLTTRANSPORT_EXPORT inline Result<void> invoke(const std::string &methodName,
-                                             const nlohmann::json &parameters = nlohmann::json({}))
-{
-    return GetHelperInstance().invoke(methodName, parameters);
-}
-
-FIREBOLTTRANSPORT_EXPORT inline Result<void> set(const std::string &methodName,
-                                          const nlohmann::json &parameters)
-{
-    return GetHelperInstance().set(methodName, parameters);
-}
-
 struct SubscriptionData
 {
     std::string eventName;
@@ -89,37 +51,42 @@ void onPropertyChangedCallback(void *subscriptionDataPtr, const nlohmann::json &
     notifier(jsonType.Value());
 }
 
-class FIREBOLTTRANSPORT_EXPORT SubscriptionHelper
+class FIREBOLTTRANSPORT_EXPORT Helper
 {
 public:
-    void unsubscribeAll();
+    virtual ~Helper() = default;
 
-protected:
-    SubscriptionHelper() = default;
-    virtual ~SubscriptionHelper();
+    virtual Result<void> set(const std::string &methodName, const nlohmann::json &parameters) = 0;
+    virtual Result<void> invoke(const std::string &methodName, const nlohmann::json &parameters) = 0;
 
-    Result<void> unsubscribe(SubscriptionId id);
+    virtual Result<void> unsubscribe(SubscriptionId id) = 0;
+    virtual void unsubscribeAll() = 0;
+
+    template <typename JsonType, typename PropertyType>
+    Result<PropertyType> get(const std::string &methodName, const nlohmann::json &parameters = nlohmann::json({}))
+    {
+        Result<nlohmann::json> result = getJson(methodName, parameters);
+        if (!result)
+        {
+            return Result<PropertyType>{result.error()};
+        }
+        JsonType jsonResult;
+        jsonResult.FromJson(*result);
+        return Result<PropertyType>{jsonResult.Value()};
+    }
+
     template <typename JsonType, typename PropertyType>
     Result<SubscriptionId> subscribe(const std::string &eventName, std::function<void(PropertyType)> &&notification)
     {
-        std::lock_guard<std::mutex> lock(mutex_);
-        subscriptions_[currentId_] = SubscriptionData{eventName, std::move(notification)};
-        void *notificationPtr = reinterpret_cast<void *>(&subscriptions_[currentId_]);
-        Error status =
-            FireboltSDK::Transport::GetGatewayInstance().Subscribe(eventName,
-                                                                   onPropertyChangedCallback<JsonType, PropertyType>,
-                                                                   notificationPtr);
-        if (Error::None != status)
-        {
-            subscriptions_.erase(currentId_);
-            return Result<SubscriptionId>{status};
-        }
-        return Result<SubscriptionId>{currentId_++};
+        return subscribeImpl(eventName, std::move(notification), onPropertyChangedCallback<JsonType, PropertyType>);
     }
 
 private:
-    std::mutex mutex_;
-    std::map<uint64_t, SubscriptionData> subscriptions_;
-    uint64_t currentId_{0};
+    virtual Result<nlohmann::json> getJson(const std::string &methodName, const nlohmann::json &parameters) = 0;
+    virtual Result<SubscriptionId> subscribeImpl(const std::string &eventName, std::any &&notification,
+                                                 void (*callback)(void *, const nlohmann::json &)) = 0;
 };
+
+FIREBOLTTRANSPORT_EXPORT Helper& GetHelperInstance();
+
 } // namespace Firebolt::Helpers
