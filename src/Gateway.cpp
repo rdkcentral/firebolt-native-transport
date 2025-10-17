@@ -51,7 +51,7 @@ static Config config_g = {
 using Timestamp = std::chrono::time_point<std::chrono::steady_clock>;
 using MessageID = uint32_t;
 
-Gateway::~Gateway() = default;
+IGateway::~IGateway() = default;
 
 class IClientTransport
 {
@@ -422,7 +422,7 @@ public:
 #endif
 };
 
-class GatewayImpl : public Gateway,
+class GatewayImpl : public IGateway,
                     private IClientTransport,
                     private IServerTransport
 {
@@ -595,7 +595,7 @@ private:
 #endif
 };
 
-Gateway &GetGatewayInstance()
+IGateway &GetGatewayInstance()
 {
     static GatewayImpl instance;
     return instance;

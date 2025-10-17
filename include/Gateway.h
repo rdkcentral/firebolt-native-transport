@@ -33,10 +33,10 @@ using ConnectionChangeCallback = std::function<void(const bool connected, const 
 using ProviderCallback = std::function<std::string(void *usercb, const nlohmann::json &params)>;
 #endif
 
-class FIREBOLTTRANSPORT_EXPORT Gateway
+class IGateway
 {
 public:
-    virtual ~Gateway();
+    virtual ~IGateway();
 
     virtual Firebolt::Error Connect(const std::string &configLine, ConnectionChangeCallback onConnectionChange) = 0;
     virtual Firebolt::Error Disconnect() = 0;
@@ -54,5 +54,5 @@ public:
 #endif
 };
 
-FIREBOLTTRANSPORT_EXPORT Gateway &GetGatewayInstance();
+FIREBOLTTRANSPORT_EXPORT IGateway &GetGatewayInstance();
 } // namespace FireboltSDK::Transport

@@ -22,10 +22,10 @@
 
 namespace Firebolt::Helpers
 {
-class TransportHelper : public Helper
+class HelperImpl : public IHelper
 {
 public:
-    ~TransportHelper() override { unsubscribeAll(); }
+    ~HelperImpl() override { unsubscribeAll(); }
 
     Result<void> set(const std::string& methodName, const nlohmann::json& parameters) override
     {
@@ -106,9 +106,9 @@ private:
     uint64_t currentId_{0};
 };
 
-Helper& GetHelperInstance()
+IHelper& GetHelperInstance()
 {
-    static TransportHelper instance;
+    static HelperImpl instance;
     return instance;
 }
 

@@ -51,10 +51,10 @@ void onPropertyChangedCallback(void *subscriptionDataPtr, const nlohmann::json &
     notifier(jsonType.Value());
 }
 
-class FIREBOLTTRANSPORT_EXPORT Helper
+class IHelper
 {
 public:
-    virtual ~Helper() = default;
+    virtual ~IHelper() = default;
 
     virtual Result<void> set(const std::string &methodName, const nlohmann::json &parameters) = 0;
     virtual Result<void> invoke(const std::string &methodName, const nlohmann::json &parameters) = 0;
@@ -87,6 +87,6 @@ private:
                                                  void (*callback)(void *, const nlohmann::json &)) = 0;
 };
 
-FIREBOLTTRANSPORT_EXPORT Helper& GetHelperInstance();
+FIREBOLTTRANSPORT_EXPORT IHelper& GetHelperInstance();
 
 } // namespace Firebolt::Helpers
