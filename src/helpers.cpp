@@ -18,7 +18,7 @@
  */
 
 #include "helpers.h"
-#include "Gateway.h"
+#include "gateway.h"
 
 namespace Firebolt::Helpers
 {

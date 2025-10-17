@@ -15,7 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#include "Logger.h"
+#include "logger.h"
 #include "error.h"
 #include <chrono>
 #include <cstdarg>

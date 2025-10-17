@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#include "Gateway.h"
-#include "Logger.h"
-#include "Transport.h"
-#include "TypesPriv.h"
+#include "gateway.h"
+#include "logger.h"
+#include "transport.h"
+#include "types/json_types.h"
 #include "error.h"
 #include <assert.h>
 #include <chrono>

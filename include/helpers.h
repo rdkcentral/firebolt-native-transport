@@ -20,7 +20,8 @@
 #pragma once
 
 #include "Gateway.h"
-#include "common/types.h"
+#include "types/json_types.h"
+#include "types/types.h"
 #include "error.h"
 #include "firebolttransport_export.h"
 #include <any>
