@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include "logger.h"
-#include "error.h"
+#include "types/fb-errors.h"
 #include <chrono>
 #include <cstdarg>
 #include <cstring>

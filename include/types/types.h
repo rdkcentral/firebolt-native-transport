@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "error.h"
+#include "types/fb-errors.h"
 #include <cstdint>
 #include <optional>
 #include <string>

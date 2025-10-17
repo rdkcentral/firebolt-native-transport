@@ -19,8 +19,7 @@
 
 #pragma once
 
-#include "error.h"
-
+#include "types/fb-errors.h"
 #include <atomic>
 #include <functional>
 #include <iostream>

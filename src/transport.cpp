@@ -18,7 +18,7 @@
  */
 
 #include "transport.h"
-#include "error.h"
+#include "types/fb-errors.h"
 #include <assert.h>
 
 namespace FireboltSDK::Transport

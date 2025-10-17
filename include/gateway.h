@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "error.h"
+#include "types/fb-errors.h"
 #include "firebolttransport_export.h"
 #include <functional>
 #include <nlohmann/json.hpp>

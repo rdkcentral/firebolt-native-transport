@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "error.h"
+#include "types/fb-errors.h"
 #include "firebolttransport_export.h"
 #include <stdint.h>
 #include <string>

@@ -19,10 +19,10 @@
 
 #pragma once
 
-#include "Gateway.h"
+#include "gateway.h"
+#include "types/fb-errors.h"
 #include "types/json_types.h"
 #include "types/types.h"
-#include "error.h"
 #include "firebolttransport_export.h"
 #include <any>
 #include <map>
