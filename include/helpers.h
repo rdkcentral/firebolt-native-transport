@@ -19,18 +19,14 @@
 
 #pragma once
 
-#include "gateway.h"
+#include "firebolttransport_export.h"
 #include "types/fb-errors.h"
 #include "types/json_types.h"
 #include "types/types.h"
-#include "firebolttransport_export.h"
 #include <any>
-#include <map>
-#include <mutex>
-#include <nlohmann/json.hpp>
-#include <optional>
+#include <functional>
+#include <memory>
 #include <string>
-#include <type_traits>
 
 namespace Firebolt::Helpers
 {
@@ -52,10 +48,21 @@ void onPropertyChangedCallback(void *subscriptionDataPtr, const nlohmann::json &
     notifier(jsonType.Value());
 }
 
-class SubscriptionHelper
+class SubscriptionHelperImpl;
+
+class FIREBOLTTRANSPORT_EXPORT SubscriptionHelper
 {
+private:
+    std::unique_ptr<SubscriptionHelperImpl> pimpl_;
+
 public:
-    ~SubscriptionHelper() { unsubscribeAll(); }
+    SubscriptionHelper();
+    ~SubscriptionHelper();
+
+    SubscriptionHelper(const SubscriptionHelper &) = delete;
+    SubscriptionHelper& operator=(const SubscriptionHelper &) = delete;
+    SubscriptionHelper(SubscriptionHelper &&) = delete;
+    SubscriptionHelper& operator=(SubscriptionHelper &&) = delete;
 
     template <typename JsonType, typename PropertyType>
     Result<SubscriptionId> subscribe(const std::string &eventName, std::function<void(PropertyType)> &&notification)
@@ -63,51 +70,12 @@ public:
         return subscribeImpl(eventName, std::move(notification), onPropertyChangedCallback<JsonType, PropertyType>);
     }
 
-    Result<void> unsubscribe(SubscriptionId id)
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        auto it = subscriptions_.find(id);
-        if (it == subscriptions_.end())
-        {
-            return Result<void>{Error::General};
-        }
-        auto errorStatus{FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(it->second.eventName)};
-        subscriptions_.erase(it);
-        return Result<void>{errorStatus};
-    }
-
-    void unsubscribeAll()
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        for (auto &subscription : subscriptions_)
-        {
-            FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(subscription.second.eventName);
-        }
-        subscriptions_.clear();
-    }
+    Result<void> unsubscribe(SubscriptionId id);
+    void unsubscribeAll();
 
 private:
     Result<SubscriptionId> subscribeImpl(const std::string &eventName, std::any &&notification,
-                                         void (*callback)(void *, const nlohmann::json &))
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        uint64_t newId = currentId_++;
-        subscriptions_[newId] = SubscriptionData{eventName, std::move(notification)};
-        void *notificationPtr = reinterpret_cast<void *>(&subscriptions_[newId]);
-
-        Error status = FireboltSDK::Transport::GetGatewayInstance().Subscribe(eventName, callback, notificationPtr);
-
-        if (Error::None != status)
-        {
-            subscriptions_.erase(newId);
-            return Result<SubscriptionId>{status};
-        }
-        return Result<SubscriptionId>{newId};
-    }
-
-    std::mutex mutex_;
-    std::map<uint64_t, SubscriptionData> subscriptions_;
-    uint64_t currentId_{0};
+                                         void (*callback)(void *, const nlohmann::json &));
 };
 
 class IHelper
