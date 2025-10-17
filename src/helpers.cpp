@@ -25,7 +25,7 @@ namespace Firebolt::Helpers
 class HelperImpl : public IHelper
 {
 public:
-    ~HelperImpl() override { unsubscribeAll(); }
+    ~HelperImpl() = default;
 
     Result<void> set(const std::string& methodName, const nlohmann::json& parameters) override
     {
@@ -48,29 +48,6 @@ public:
         return Result<void>{FireboltSDK::Transport::GetGatewayInstance().Request(methodName, parameters, result)};
     }
 
-    Result<void> unsubscribe(SubscriptionId id) override
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        auto it = subscriptions_.find(id);
-        if (it == subscriptions_.end())
-        {
-            return Result<void>{Error::General};
-        }
-        auto errorStatus{FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(it->second.eventName)};
-        subscriptions_.erase(it);
-        return Result<void>{errorStatus};
-    }
-
-    void unsubscribeAll() override
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        for (auto &subscription : subscriptions_)
-        {
-            FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(subscription.second.eventName);
-        }
-        subscriptions_.clear();
-    }
-
 private:
     Result<nlohmann::json> getJson(const std::string &methodName, const nlohmann::json &parameters) override
     {
@@ -82,28 +59,6 @@ private:
         }
         return Result<nlohmann::json>{result};
     }
-
-    Result<SubscriptionId> subscribeImpl(const std::string &eventName, std::any &&notification,
-                                         void (*callback)(void *, const nlohmann::json &)) override
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        uint64_t newId = currentId_++;
-        subscriptions_[newId] = SubscriptionData{eventName, std::move(notification)};
-        void *notificationPtr = reinterpret_cast<void *>(&subscriptions_[newId]);
-
-        Error status = FireboltSDK::Transport::GetGatewayInstance().Subscribe(eventName, callback, notificationPtr);
-
-        if (Error::None != status)
-        {
-            subscriptions_.erase(newId);
-            return Result<SubscriptionId>{status};
-        }
-        return Result<SubscriptionId>{newId};
-    }
-
-    std::mutex mutex_;
-    std::map<uint64_t, SubscriptionData> subscriptions_;
-    uint64_t currentId_{0};
 };
 
 IHelper& GetHelperInstance()

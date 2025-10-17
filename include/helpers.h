@@ -52,6 +52,64 @@ void onPropertyChangedCallback(void *subscriptionDataPtr, const nlohmann::json &
     notifier(jsonType.Value());
 }
 
+class SubscriptionHelper
+{
+public:
+    ~SubscriptionHelper() { unsubscribeAll(); }
+
+    template <typename JsonType, typename PropertyType>
+    Result<SubscriptionId> subscribe(const std::string &eventName, std::function<void(PropertyType)> &&notification)
+    {
+        return subscribeImpl(eventName, std::move(notification), onPropertyChangedCallback<JsonType, PropertyType>);
+    }
+
+    Result<void> unsubscribe(SubscriptionId id)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto it = subscriptions_.find(id);
+        if (it == subscriptions_.end())
+        {
+            return Result<void>{Error::General};
+        }
+        auto errorStatus{FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(it->second.eventName)};
+        subscriptions_.erase(it);
+        return Result<void>{errorStatus};
+    }
+
+    void unsubscribeAll()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        for (auto &subscription : subscriptions_)
+        {
+            FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(subscription.second.eventName);
+        }
+        subscriptions_.clear();
+    }
+
+private:
+    Result<SubscriptionId> subscribeImpl(const std::string &eventName, std::any &&notification,
+                                         void (*callback)(void *, const nlohmann::json &))
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        uint64_t newId = currentId_++;
+        subscriptions_[newId] = SubscriptionData{eventName, std::move(notification)};
+        void *notificationPtr = reinterpret_cast<void *>(&subscriptions_[newId]);
+
+        Error status = FireboltSDK::Transport::GetGatewayInstance().Subscribe(eventName, callback, notificationPtr);
+
+        if (Error::None != status)
+        {
+            subscriptions_.erase(newId);
+            return Result<SubscriptionId>{status};
+        }
+        return Result<SubscriptionId>{newId};
+    }
+
+    std::mutex mutex_;
+    std::map<uint64_t, SubscriptionData> subscriptions_;
+    uint64_t currentId_{0};
+};
+
 class IHelper
 {
 public:
@@ -59,9 +117,6 @@ public:
 
     virtual Result<void> set(const std::string &methodName, const nlohmann::json &parameters) = 0;
     virtual Result<void> invoke(const std::string &methodName, const nlohmann::json &parameters) = 0;
-
-    virtual Result<void> unsubscribe(SubscriptionId id) = 0;
-    virtual void unsubscribeAll() = 0;
 
     template <typename JsonType, typename PropertyType>
     Result<PropertyType> get(const std::string &methodName, const nlohmann::json &parameters = nlohmann::json({}))
@@ -76,16 +131,8 @@ public:
         return Result<PropertyType>{jsonResult.Value()};
     }
 
-    template <typename JsonType, typename PropertyType>
-    Result<SubscriptionId> subscribe(const std::string &eventName, std::function<void(PropertyType)> &&notification)
-    {
-        return subscribeImpl(eventName, std::move(notification), onPropertyChangedCallback<JsonType, PropertyType>);
-    }
-
 private:
     virtual Result<nlohmann::json> getJson(const std::string &methodName, const nlohmann::json &parameters) = 0;
-    virtual Result<SubscriptionId> subscribeImpl(const std::string &eventName, std::any &&notification,
-                                                 void (*callback)(void *, const nlohmann::json &)) = 0;
 };
 
 FIREBOLTTRANSPORT_EXPORT IHelper& GetHelperInstance();
