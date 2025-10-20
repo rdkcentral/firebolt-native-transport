@@ -22,10 +22,35 @@
 
 namespace Firebolt::Helpers
 {
+
+SubscriptionManager::SubscriptionManager(IHelper &helper, void *owner) : helper_(helper), owner_(owner) {}
+SubscriptionManager::~SubscriptionManager()
+{
+    unsubscribeAll();
+}
+
+Result<void> SubscriptionManager::unsubscribe(SubscriptionId id)
+{
+    return helper_.unsubscribe(id);
+}
+
+void SubscriptionManager::unsubscribeAll()
+{
+    helper_.unsubscribeAll(owner_);
+}
+
 class HelperImpl : public IHelper
 {
 public:
-    ~HelperImpl() override { unsubscribeAll(); }
+    ~HelperImpl() override
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        for (auto &subscription : subscriptions_)
+        {
+            FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(subscription.second.eventName);
+        }
+        subscriptions_.clear();
+    }
 
     Result<void> set(const std::string& methodName, const nlohmann::json& parameters) override
     {
@@ -61,14 +86,21 @@ public:
         return Result<void>{errorStatus};
     }
 
-    void unsubscribeAll() override
+    void unsubscribeAll(void *owner) override
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        for (auto &subscription : subscriptions_)
+        for (auto it = subscriptions_.begin(); it != subscriptions_.end();)
         {
-            FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(subscription.second.eventName);
+            if (it->second.owner == owner)
+            {
+                FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(it->second.eventName);
+                it = subscriptions_.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
         }
-        subscriptions_.clear();
     }
 
 private:
@@ -83,12 +115,12 @@ private:
         return Result<nlohmann::json>{result};
     }
 
-    Result<SubscriptionId> subscribeImpl(const std::string &eventName, std::any &&notification,
-                                         void (*callback)(void *, const nlohmann::json &)) override
+    Result<SubscriptionId> subscribe(void *owner, const std::string &eventName, std::any &&notification,
+                                     void (*callback)(void *, const nlohmann::json &)) override
     {
         std::lock_guard<std::mutex> lock(mutex_);
         uint64_t newId = currentId_++;
-        subscriptions_[newId] = SubscriptionData{eventName, std::move(notification)};
+        subscriptions_[newId] = SubscriptionData{owner, eventName, std::move(notification)};
         void *notificationPtr = reinterpret_cast<void *>(&subscriptions_[newId]);
 
         Error status = FireboltSDK::Transport::GetGatewayInstance().Subscribe(eventName, callback, notificationPtr);

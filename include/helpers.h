@@ -37,6 +37,7 @@ namespace Firebolt::Helpers
 
 struct SubscriptionData
 {
+    void *owner;
     std::string eventName;
     std::any notification;
 };
@@ -59,10 +60,6 @@ public:
 
     virtual Result<void> set(const std::string &methodName, const nlohmann::json &parameters) = 0;
     virtual Result<void> invoke(const std::string &methodName, const nlohmann::json &parameters) = 0;
-
-    virtual Result<void> unsubscribe(SubscriptionId id) = 0;
-    virtual void unsubscribeAll() = 0;
-
     template <typename JsonType, typename PropertyType>
     Result<PropertyType> get(const std::string &methodName, const nlohmann::json &parameters = nlohmann::json({}))
     {
@@ -76,16 +73,37 @@ public:
         return Result<PropertyType>{jsonResult.Value()};
     }
 
-    template <typename JsonType, typename PropertyType>
-    Result<SubscriptionId> subscribe(const std::string &eventName, std::function<void(PropertyType)> &&notification)
-    {
-        return subscribeImpl(eventName, std::move(notification), onPropertyChangedCallback<JsonType, PropertyType>);
-    }
+    virtual Result<SubscriptionId> subscribe(void *owner, const std::string &eventName, std::any &&notification,
+                                             void (*callback)(void *, const nlohmann::json &)) = 0;
+    virtual Result<void> unsubscribe(SubscriptionId id) = 0;
+    virtual void unsubscribeAll(void *owner) = 0;
 
 private:
     virtual Result<nlohmann::json> getJson(const std::string &methodName, const nlohmann::json &parameters) = 0;
-    virtual Result<SubscriptionId> subscribeImpl(const std::string &eventName, std::any &&notification,
-                                                 void (*callback)(void *, const nlohmann::json &)) = 0;
+};
+
+class FIREBOLTTRANSPORT_EXPORT SubscriptionManager
+{
+public:
+    SubscriptionManager(IHelper &helper, void *owner);
+    ~SubscriptionManager();
+
+    SubscriptionManager(const SubscriptionManager &) = delete;
+    SubscriptionManager& operator=(const SubscriptionManager &) = delete;
+
+    template <typename JsonType, typename PropertyType>
+    Result<SubscriptionId> subscribe(const std::string &eventName, std::function<void(PropertyType)> &&notification)
+    {
+        return helper_.subscribe(owner_, eventName, std::move(notification),
+                                 onPropertyChangedCallback<JsonType, PropertyType>);
+    }
+
+    Result<void> unsubscribe(SubscriptionId id);
+    void unsubscribeAll();
+
+private:
+    IHelper &helper_;
+    void *owner_;
 };
 
 FIREBOLTTRANSPORT_EXPORT IHelper& GetHelperInstance();
