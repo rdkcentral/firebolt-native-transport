@@ -19,14 +19,18 @@
 
 #pragma once
 
-#include "firebolttransport_export.h"
+#include "gateway.h"
 #include "types/fb-errors.h"
 #include "types/json_types.h"
 #include "types/types.h"
+#include "firebolttransport_export.h"
 #include <any>
-#include <functional>
-#include <memory>
+#include <map>
+#include <mutex>
+#include <nlohmann/json.hpp>
+#include <optional>
 #include <string>
+#include <type_traits>
 
 namespace Firebolt::Helpers
 {
@@ -48,36 +52,6 @@ void onPropertyChangedCallback(void *subscriptionDataPtr, const nlohmann::json &
     notifier(jsonType.Value());
 }
 
-class SubscriptionHelperImpl;
-
-class FIREBOLTTRANSPORT_EXPORT SubscriptionHelper
-{
-private:
-    std::unique_ptr<SubscriptionHelperImpl> pimpl_;
-
-public:
-    SubscriptionHelper();
-    ~SubscriptionHelper();
-
-    SubscriptionHelper(const SubscriptionHelper &) = delete;
-    SubscriptionHelper& operator=(const SubscriptionHelper &) = delete;
-    SubscriptionHelper(SubscriptionHelper &&) = delete;
-    SubscriptionHelper& operator=(SubscriptionHelper &&) = delete;
-
-    template <typename JsonType, typename PropertyType>
-    Result<SubscriptionId> subscribe(const std::string &eventName, std::function<void(PropertyType)> &&notification)
-    {
-        return subscribeImpl(eventName, std::move(notification), onPropertyChangedCallback<JsonType, PropertyType>);
-    }
-
-    Result<void> unsubscribe(SubscriptionId id);
-    void unsubscribeAll();
-
-private:
-    Result<SubscriptionId> subscribeImpl(const std::string &eventName, std::any &&notification,
-                                         void (*callback)(void *, const nlohmann::json &));
-};
-
 class IHelper
 {
 public:
@@ -85,6 +59,9 @@ public:
 
     virtual Result<void> set(const std::string &methodName, const nlohmann::json &parameters) = 0;
     virtual Result<void> invoke(const std::string &methodName, const nlohmann::json &parameters) = 0;
+
+    virtual Result<void> unsubscribe(SubscriptionId id) = 0;
+    virtual void unsubscribeAll() = 0;
 
     template <typename JsonType, typename PropertyType>
     Result<PropertyType> get(const std::string &methodName, const nlohmann::json &parameters = nlohmann::json({}))
@@ -99,8 +76,16 @@ public:
         return Result<PropertyType>{jsonResult.Value()};
     }
 
+    template <typename JsonType, typename PropertyType>
+    Result<SubscriptionId> subscribe(const std::string &eventName, std::function<void(PropertyType)> &&notification)
+    {
+        return subscribeImpl(eventName, std::move(notification), onPropertyChangedCallback<JsonType, PropertyType>);
+    }
+
 private:
     virtual Result<nlohmann::json> getJson(const std::string &methodName, const nlohmann::json &parameters) = 0;
+    virtual Result<SubscriptionId> subscribeImpl(const std::string &eventName, std::any &&notification,
+                                                 void (*callback)(void *, const nlohmann::json &)) = 0;
 };
 
 FIREBOLTTRANSPORT_EXPORT IHelper& GetHelperInstance();
