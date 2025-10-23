@@ -1,0 +1,47 @@
+name: Automatic Semantic Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - next
+      - '+([0-9])\.+([0-9])\.x-maintenance'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run semantic-release
+        id: semantic
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
+
+      - name: Sync main back to next
+        if: steps.semantic.outputs.new_release_published == 'true' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout next
+          git merge --no-ff main -m "chore: merge main back into next [skip ci]"
+          git push origin next
+
