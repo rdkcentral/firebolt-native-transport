@@ -50,16 +50,13 @@ void onPropertyChangedCallback(void *subscriptionDataPtr, const nlohmann::json &
     auto notifier = std::any_cast<std::function<void(Args...)>>(subscriptionData->notification);
     JsonType jsonType;
     jsonType.FromJson(jsonResponse);
-    printf("TB] II onPropertyChangedCallback called for event %s\n", subscriptionData->eventName.c_str());
 
     if constexpr (sizeof...(Args) > 1)
     {
-        printf("TB] II onPropertyChangedCallback - using std::apply\n");
         std::apply(notifier, jsonType.Value());
     }
     else
     {
-        printf("TB] II onPropertyChangedCallback - single arg\n");
         notifier(jsonType.Value());
     }
 }
