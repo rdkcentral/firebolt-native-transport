@@ -30,6 +30,7 @@
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <type_traits>
 
 namespace Firebolt::Helpers
@@ -42,15 +43,25 @@ struct SubscriptionData
     std::any notification;
 };
 
-template <typename JsonType, typename PropertyType>
+template <typename JsonType, typename... Args>
 void onPropertyChangedCallback(void *subscriptionDataPtr, const nlohmann::json &jsonResponse)
 {
     SubscriptionData *subscriptionData = reinterpret_cast<SubscriptionData *>(subscriptionDataPtr);
-    std::function<void(PropertyType)> notifier =
-        std::any_cast<std::function<void(PropertyType)>>(subscriptionData->notification);
+    auto notifier = std::any_cast<std::function<void(Args...)>>(subscriptionData->notification);
     JsonType jsonType;
     jsonType.FromJson(jsonResponse);
-    notifier(jsonType.Value());
+    printf("TB] II onPropertyChangedCallback called for event %s\n", subscriptionData->eventName.c_str());
+
+    if constexpr (sizeof...(Args) > 1)
+    {
+        printf("TB] II onPropertyChangedCallback - using std::apply\n");
+        std::apply(notifier, jsonType.Value());
+    }
+    else
+    {
+        printf("TB] II onPropertyChangedCallback - single arg\n");
+        notifier(jsonType.Value());
+    }
 }
 
 class IHelper
@@ -91,11 +102,11 @@ public:
     SubscriptionManager(const SubscriptionManager &) = delete;
     SubscriptionManager& operator=(const SubscriptionManager &) = delete;
 
-    template <typename JsonType, typename PropertyType>
-    Result<SubscriptionId> subscribe(const std::string &eventName, std::function<void(PropertyType)> &&notification)
+    template <typename JsonType, typename... Args>
+    Result<SubscriptionId> subscribe(const std::string &eventName, std::function<void(Args...)> &&notification)
     {
         return helper_.subscribe(owner_, eventName, std::move(notification),
-                                 onPropertyChangedCallback<JsonType, PropertyType>);
+                                 onPropertyChangedCallback<JsonType, Args...>);
     }
 
     Result<void> unsubscribe(SubscriptionId id);
