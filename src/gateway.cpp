@@ -256,10 +256,14 @@ class Server
     {
         std::string key = event;
         size_t dotPos = key.find('.');
-        if (dotPos != std::string::npos && dotPos + 3 < key.size() && key.substr(dotPos + 1, 2) == "on")
-        {
-            key[dotPos + 3] = std::tolower(key[dotPos + 3]); // make lower-case the first latter after ".on"
-            key.erase(dotPos + 1, 2); // erase "on"
+        if (dotPos != std::string::npos) {
+            std::transform(key.begin(), key.begin() + dotPos, key.begin(),
+                   [](unsigned char c) { return std::tolower(c); }); // ignore case of module name
+            if (dotPos + 3 < key.size() && key.substr(dotPos + 1, 2) == "on")
+            {
+                key[dotPos + 3] = std::tolower(key[dotPos + 3]); // make lower-case the first latter after ".on"
+                key.erase(dotPos + 1, 2); // erase "on"
+            }
         }
         return key;
     }
@@ -311,8 +315,13 @@ public:
     void Notify(const std::string &method, const nlohmann::json &parameters)
     {
         std::string key = method;
+        size_t dotPos = key.find('.');
+        if (dotPos != std::string::npos) {
+            std::transform(key.begin(), key.begin() + dotPos, key.begin(),
+                   [](unsigned char c) { return std::tolower(c); }); // ignore case of module name when looking for registrants
+        }
         std::lock_guard lck(eventMap_mtx);
-        EventMap::iterator eventIt = eventMap.find(method);
+        EventMap::iterator eventIt = eventMap.find(key);
         if (eventIt != eventMap.end())
         {
             CallbackDataEvent &callback = eventIt->second;
