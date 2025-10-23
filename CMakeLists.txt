@@ -14,13 +14,36 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.10)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-include(HelperFunctions)
 
 project(FireboltTransport)
-project_version("1.0.0")
+
+# <VERSION_BLOCK>
+if (NOT PROJECT_VERSION)
+    find_package(Git QUIET)
+    if (GIT_FOUND)
+        execute_process(
+            COMMAND ${GIT_EXECUTABLE} describe --tags --dirty --match "v[0-9]*"
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE GIT_VERSION
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET
+        )
+    endif ()
+
+    if (GIT_VERSION)
+        string(REGEX REPLACE "^v" "" GIT_VERSION "${GIT_VERSION}")
+    else()
+        set(GIT_VERSION "0.1.0-unknown")
+    endif ()
+    set(PROJECT_VERSION "${GIT_VERSION}" CACHE STRING "Project version string")
+endif ()
+# </VERSION_BLOCK>
+
+set(VERSION ${PROJECT_VERSION})
+message(STATUS "Project version: ${PROJECT_VERSION}")
 
 set(FIREBOLT_TRANSPORT_NAMESPACE ${PROJECT_NAME} CACHE STRING "Namespace of the project")
 set(FIREBOLT_TRANSPORT_WAITTIME 1000 CACHE STRING "Maximum time to wait for Transport layer to get response")
@@ -29,7 +52,7 @@ option(ENABLE_UNIT_TESTS "Build openrpc native test" OFF)
 
 if (FIREBOLT_ENABLE_STATIC_LIB)
     set(FIREBOLT_LIBRARY_TYPE STATIC)
-    add_compile_definitions(FIREBOLTSDK_STATIC)
+    add_compile_definitions(FIREBOLTTRANSPORT_STATIC_DEFINE)
 else ()
     set(FIREBOLT_LIBRARY_TYPE SHARED)
 endif ()
@@ -47,17 +70,7 @@ list(APPEND CMAKE_MODULE_PATH
         "${SYSROOT_PATH}/usr/lib/cmake"
         "${SYSROOT_PATH}/tools/cmake")
 
-find_package(WPEFramework CONFIG REQUIRED)
-
 if (ENABLE_UNIT_TESTS)
-    add_compile_definitions(UNIT_TEST UT_OPEN_RPC_FILE="firebolt-open-rpc.json")
 endif ()
 
 add_subdirectory(src)
-
-message("${CMAKE_BINARY_DIR}/${PROJECT_NAME}Config.cmake")
-
-configure_file("${CMAKE_SOURCE_DIR}/cmake/project.cmake.in"
-    "${CMAKE_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-    @ONLY)
-

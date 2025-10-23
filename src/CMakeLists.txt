@@ -14,73 +14,96 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-cmake_minimum_required(VERSION 3.3)
+include(GNUInstallDirs)
+include(GenerateExportHeader)
+include(CMakePackageConfigHelpers)
 
 set(TARGET ${PROJECT_NAME})
 message("Setup ${TARGET} v${PROJECT_VERSION}")
 
 file(GLOB SOURCES *.cpp)
+
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+
 add_library(${TARGET} ${FIREBOLT_LIBRARY_TYPE}
     ${SOURCES}
-    Logger/Logger.cpp
-    Transport/Transport.cpp
-    Accessor/Accessor.cpp
-    Event/Event.cpp
-    Async/Async.cpp
 )
 
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+find_package(nlohmann_json CONFIG REQUIRED)
+find_package(websocketpp CONFIG REQUIRED)
 
-find_package(WPEFrameworkWebSocket CONFIG REQUIRED)
-find_package(WPEFrameworkCore CONFIG REQUIRED)
-
-if (ENABLE_UNIT_TESTS)
-    find_package(nlohmann_json_schema_validator)
-    find_package(GTest)
-    target_link_libraries(${TARGET}
-        PRIVATE
-            nlohmann_json_schema_validator::validator
-            GTest::gtest)
-endif ()
+generate_export_header(${TARGET})
 
 target_link_libraries(${TARGET}
     PRIVATE
-        WPEFrameworkWebSocket::WPEFrameworkWebSocket
-        WPEFrameworkCore::WPEFrameworkCore
+        nlohmann_json::nlohmann_json
+        websocketpp::websocketpp
 )
 
 target_include_directories(${TARGET}
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+    PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}>
 )
 
+string(REGEX REPLACE "^v?([0-9]+)\\.([0-9]+)\\.([0-9]+).*" "\\1" PROJECT_VERSION_MAJOR ${PROJECT_VERSION})
 set_target_properties(${TARGET} PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED YES
-    FRAMEWORK FALSE
-    LINK_WHAT_YOU_USE TRUE
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
+)
+
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/${PROJECT_NAME}Config.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
 )
 
 install(
     TARGETS ${TARGET}
     EXPORT ${TARGET}Targets
-    ARCHIVE DESTINATION lib # static lib
-    LIBRARY DESTINATION lib # shared lib
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+install(
+    FILES ${CMAKE_BINARY_DIR}/src/${PROJECT_NAME}Config.cmake
+    DESTINATION lib/cmake/${PROJECT_NAME}
+)
+
+install(
+    EXPORT ${TARGET}Targets
+    NAMESPACE ${TARGET}::
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/${PROJECT_NAME}
 )
 
 install(
     DIRECTORY ${CMAKE_SOURCE_DIR}/include/
     DESTINATION include/${PROJECT_NAME}
-    FILES_MATCHING PATTERN "*.h")
+    FILES_MATCHING PATTERN "*.h"
+)
+
+string(TOLOWER "${TARGET}" TARGET_LOWER)
+install(
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_LOWER}_export.h
+    DESTINATION include/${PROJECT_NAME}
+)
 
 install(
-    FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}Config.cmake
-    DESTINATION lib/cmake/${PROJECT_NAME})
-
-InstallCMakeConfig(TARGETS ${TARGET})
-InstallPackageConfig(TARGETS ${TARGET} DESCRIPTION "Firebolt Transport Library")
-
+    FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+)

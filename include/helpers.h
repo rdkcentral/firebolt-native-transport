@@ -19,260 +19,101 @@
 
 #pragma once
 
-#include "Portability.h"
-#include "Gateway.h"
-#include "FireboltSDK.h"
-#include "common/types.h"
-#include "error.h"
+#include "gateway.h"
+#include "types/fb-errors.h"
+#include "types/json_types.h"
+#include "types/types.h"
+#include "firebolttransport_export.h"
 #include <any>
 #include <map>
 #include <mutex>
+#include <nlohmann/json.hpp>
 #include <optional>
+#include <string>
+#include <tuple>
 #include <type_traits>
 
 namespace Firebolt::Helpers
 {
-class FIREBOLTSDK_EXPORT Parameters
-{
-public:
-    Parameters() = default;
-    Parameters(const std::vector<std::string>& value);
-    template <typename T> Parameters(const T& param)
-    {
-        object_.Set(_T("value"), WPEFramework::Core::JSON::Variant{param});
-    }
-    ~Parameters() = default;
-
-    Parameters& add(const char* paramName, const WPEFramework::Core::JSON::Variant& param);
-
-    template <typename T> Parameters& add(const char* paramName, const std::optional<T>& param)
-    {
-        if (param.has_value())
-        {
-            object_.Set(paramName, WPEFramework::Core::JSON::Variant{param.value()});
-        }
-        return *this;
-    }
-
-    template <typename JsonType, typename ParamType> Parameters& add(const char* paramName, const ParamType& param)
-    {
-        object_.Set(paramName, JsonType{param}.Data());
-        return *this;
-    }
-
-    template <typename JsonType, typename ParamType>
-    Parameters& add(const char* paramName, const std::optional<ParamType>& param)
-    {
-        if (param.has_value())
-        {
-            object_.Set(paramName, JsonType{param.value()}.Data());
-        }
-        return *this;
-    }
-    JsonObject operator()() const;
-
-private:
-    JsonObject object_;
-};
-
-// Helper type traits for get function
-template <typename T> struct IsVector
-{
-    static const bool value = false;
-};
-template <typename T> struct IsVector<std::vector<T>>
-{
-    static const bool value = true;
-};
-
-template <typename JsonType, typename PropertyType>
-FIREBOLTSDK_EXPORT std::enable_if_t<!IsVector<PropertyType>::value, Result<PropertyType>>
-get(const string& methodName)
-{
-    JsonType jsonResult;
-    Error status = FireboltSDK::Transport::Properties::Get(methodName, jsonResult);
-    if (status == Error::None)
-    {
-        return Result<PropertyType>{jsonResult.Value()};
-    }
-    return Result<PropertyType>{status};
-}
-
-template <typename JsonType, typename PropertyType>
-FIREBOLTSDK_EXPORT std::enable_if_t<!IsVector<PropertyType>::value, Result<PropertyType>>
-get(const string& methodName, const Parameters& parameters)
-{
-    JsonType jsonResult;
-    Error status = FireboltSDK::Transport::Properties::Get(methodName, parameters(), jsonResult);
-    if (status == Error::None)
-    {
-        return Result<PropertyType>{jsonResult.Value()};
-    }
-    return Result<PropertyType>{status};
-}
-
-// specialised version for containers
-template <typename JsonType, typename PropertyType>
-FIREBOLTSDK_EXPORT inline std::enable_if_t<IsVector<PropertyType>::value, Result<PropertyType>>
-get(const std::string& methodName)
-{
-    WPEFramework::Core::JSON::ArrayType<JsonType> jsonResult;
-    Firebolt::Error status = FireboltSDK::Transport::Properties::Get(methodName, jsonResult);
-    if (status == Firebolt::Error::None)
-    {
-        Result<PropertyType> result{PropertyType{}};
-        auto index(jsonResult.Elements());
-        while (index.Next() == true)
-        {
-            result->push_back(index.Current().Value());
-        }
-        return result;
-    }
-    return Result<PropertyType>{status};
-}
-
-FIREBOLTSDK_EXPORT Result<void> set(const string& methodName, const Parameters& parameters);
-
-template <typename JsonType, typename PropertyType>
-FIREBOLTSDK_EXPORT inline std::enable_if_t<!std::is_void<PropertyType>::value && !IsVector<PropertyType>::value, Result<PropertyType>>
-invoke(const string& methodName, const Parameters& parameters)
-{
-    JsonType jsonResult;
-    auto callStatus{FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters(), jsonResult)};
-    if (Error::None == callStatus)
-    {
-        return Result<PropertyType>{jsonResult.Value()};
-    }
-    return Result<PropertyType>{callStatus};
-}
-
-FIREBOLTSDK_EXPORT Result<void> invoke(const string& methodName, const Parameters& parameters);
-
-// Specialised version for containers
-template <typename JsonType, typename PropertyType>
-FIREBOLTSDK_EXPORT inline std::enable_if_t<IsVector<PropertyType>::value, Result<PropertyType>>
-invoke(const string& methodName, const Parameters& parameters)
-{
-    WPEFramework::Core::JSON::ArrayType<JsonType> jsonResult;
-    auto callStatus{FireboltSDK::Transport::Gateway::Instance().Request(methodName, parameters(), jsonResult)};
-    if (Error::None == callStatus)
-    {
-        Result<PropertyType> result{PropertyType{}};
-        auto index(jsonResult.Elements());
-        while (index.Next() == true)
-        {
-            result->push_back(index.Current().Value());
-        }
-        return result;
-    }
-    return Result<PropertyType>{callStatus};
-}
 
 struct SubscriptionData
 {
-    string eventName;
+    void *owner;
+    std::string eventName;
     std::any notification;
 };
 
-template <typename JsonType, typename PropertyType>
-void onPropertyChangedCallback(void* subscriptionDataPtr, const void* userData, void* jsonResponse)
+template <typename JsonType, typename... Args>
+void onPropertyChangedCallback(void *subscriptionDataPtr, const nlohmann::json &jsonResponse)
 {
-    WPEFramework::Core::ProxyType<JsonType>& proxyResponse =
-        *(reinterpret_cast<WPEFramework::Core::ProxyType<JsonType>*>(jsonResponse));
+    SubscriptionData *subscriptionData = reinterpret_cast<SubscriptionData *>(subscriptionDataPtr);
+    auto notifier = std::any_cast<std::function<void(Args...)>>(subscriptionData->notification);
+    JsonType jsonType;
+    jsonType.FromJson(jsonResponse);
 
-    ASSERT(proxyResponse.IsValid() == true);
-
-    if (proxyResponse.IsValid() == true)
+    if constexpr (sizeof...(Args) > 1)
     {
-        auto changedProperty = proxyResponse->Value();
-        proxyResponse.Release();
-        SubscriptionData* subscriptionData = reinterpret_cast<SubscriptionData*>(subscriptionDataPtr);
-        std::function<void(PropertyType)> notifier =
-            std::any_cast<std::function<void(PropertyType)>>(subscriptionData->notification);
-        notifier(changedProperty);
+        std::apply(notifier, jsonType.Value());
+    }
+    else
+    {
+        notifier(jsonType.Value());
     }
 }
 
-// specialised callback for properties
-template <typename JsonType, typename PropertyType>
-inline void onContainerPropertyChangedCallback(void* subscriptionDataPtr, const void* userData, void* jsonResponse)
-{
-    WPEFramework::Core::ProxyType<WPEFramework::Core::JSON::ArrayType<JsonType>>& proxyResponse =
-        *(reinterpret_cast<WPEFramework::Core::ProxyType<WPEFramework::Core::JSON::ArrayType<JsonType>>*>(jsonResponse));
-
-    ASSERT(proxyResponse.IsValid() == true);
-
-    if (proxyResponse.IsValid() == true)
-    {
-        std::vector<PropertyType> values;
-
-        auto index(proxyResponse->Elements());
-        while (index.Next() == true)
-        {
-            values.push_back(index.Current().Value());
-        }
-        proxyResponse.Release();
-
-        SubscriptionData* subscriptionData = reinterpret_cast<SubscriptionData*>(subscriptionDataPtr);
-        std::function<void(const std::vector<PropertyType>&)> notifier =
-            std::any_cast<std::function<void(const std::vector<PropertyType>&)>>(subscriptionData->notification);
-        notifier(values);
-    }
-}
-
-class FIREBOLTSDK_EXPORT SubscriptionHelper
+class IHelper
 {
 public:
-    void unsubscribeAll();
+    virtual ~IHelper() = default;
 
-protected:
-    SubscriptionHelper() = default;
-    virtual ~SubscriptionHelper();
-
-    Result<void> unsubscribe(SubscriptionId id);
+    virtual Result<void> set(const std::string &methodName, const nlohmann::json &parameters) = 0;
+    virtual Result<void> invoke(const std::string &methodName, const nlohmann::json &parameters) = 0;
     template <typename JsonType, typename PropertyType>
-    Result<SubscriptionId> subscribe(const string& eventName, std::function<void(PropertyType)>&& notification)
+    Result<PropertyType> get(const std::string &methodName, const nlohmann::json &parameters = nlohmann::json({}))
     {
-        std::lock_guard<std::mutex> lock(mutex_);
-        subscriptions_[currentId_] = SubscriptionData{eventName, std::move(notification)};
-        JsonObject jsonParameters;
-        void* notificationPtr = reinterpret_cast<void*>(&subscriptions_[currentId_]);
-        Error status =
-            FireboltSDK::Transport::Event::Instance().Subscribe<JsonType>(eventName, jsonParameters,
-                                                               onPropertyChangedCallback<JsonType, PropertyType>,
-                                                               notificationPtr, nullptr);
-        if (Error::None == status)
+        Result<nlohmann::json> result = getJson(methodName, parameters);
+        if (!result)
         {
-            return Result<SubscriptionId>{currentId_++};
+            return Result<PropertyType>{result.error()};
         }
-        subscriptions_.erase(currentId_);
-        return Result<SubscriptionId>{status};
+        JsonType jsonResult;
+        jsonResult.FromJson(*result);
+        return Result<PropertyType>{jsonResult.Value()};
     }
 
-    // Specialised version for containers
-    template <typename JsonType, typename PropertyType>
-    Result<SubscriptionId> subscribe(const string& eventName,
-                                     std::function<void(const std::vector<PropertyType>&)>&& notification)
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        subscriptions_[currentId_] = SubscriptionData{eventName, std::move(notification)};
-        JsonObject jsonParameters;
-        void* notificationPtr = reinterpret_cast<void*>(&subscriptions_[currentId_]);
-        Error status =
-            FireboltSDK::Transport::Event::Instance().Subscribe<JsonType>(eventName, jsonParameters,
-                                                               onContainerPropertyChangedCallback<JsonType, PropertyType>,
-                                                               notificationPtr, nullptr);
-        if (Error::None == status)
-        {
-            return Result<SubscriptionId>{currentId_++};
-        }
-        subscriptions_.erase(currentId_);
-        return Result<SubscriptionId>{status};
-    }
+    virtual Result<SubscriptionId> subscribe(void *owner, const std::string &eventName, std::any &&notification,
+                                             void (*callback)(void *, const nlohmann::json &)) = 0;
+    virtual Result<void> unsubscribe(SubscriptionId id) = 0;
+    virtual void unsubscribeAll(void *owner) = 0;
 
 private:
-    std::mutex mutex_;
-    std::map<uint64_t, SubscriptionData> subscriptions_;
-    uint64_t currentId_{0};
+    virtual Result<nlohmann::json> getJson(const std::string &methodName, const nlohmann::json &parameters) = 0;
 };
-} // namespace Firebolt::Transport
+
+class FIREBOLTTRANSPORT_EXPORT SubscriptionManager
+{
+public:
+    SubscriptionManager(IHelper &helper, void *owner);
+    ~SubscriptionManager();
+
+    SubscriptionManager(const SubscriptionManager &) = delete;
+    SubscriptionManager& operator=(const SubscriptionManager &) = delete;
+
+    template <typename JsonType, typename... Args>
+    Result<SubscriptionId> subscribe(const std::string &eventName, std::function<void(Args...)> &&notification)
+    {
+        return helper_.subscribe(owner_, eventName, std::move(notification),
+                                 onPropertyChangedCallback<JsonType, Args...>);
+    }
+
+    Result<void> unsubscribe(SubscriptionId id);
+    void unsubscribeAll();
+
+private:
+    IHelper &helper_;
+    void *owner_;
+};
+
+FIREBOLTTRANSPORT_EXPORT IHelper& GetHelperInstance();
+
+} // namespace Firebolt::Helpers
