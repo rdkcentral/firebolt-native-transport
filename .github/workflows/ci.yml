@@ -42,7 +42,7 @@ jobs:
           sudo cp -r /usr/include/boost ${{ env.SYSROOT_PATH }}/include/
           sudo cp /usr/lib/x86_64-linux-gnu/libboost_* ${{ env.SYSROOT_PATH }}/lib/
 
-      - name: Build and Project Dependencies
+      - name: Build and Install Project Dependencies
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
           echo "Building dependencies..."
