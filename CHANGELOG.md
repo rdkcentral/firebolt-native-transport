@@ -1,3 +1,26 @@
+# [1.0.0-next.1](https://github.com/rdkcentral/firebolt-native-transport/compare/v0.2.1-next.1...v1.0.0-next.1) (2025-10-23)
+
+
+### Features
+
+* thunder removal ([#11](https://github.com/rdkcentral/firebolt-native-transport/issues/11)) ([85ee406](https://github.com/rdkcentral/firebolt-native-transport/commit/85ee4062bb5b8d58915e6950da78be87de6b41e0))
+
+
+### BREAKING CHANGES
+
+* The dependency on Thunder has been removed.
+All related code has been refactored to support this change.
+
+* ci: Add CI, create versioned package when releasing
+
+* ci: Do not cache boost installation for now
+
+* style: Typo
+
+* fix: In subscription, make string comparison case-insensitive
+
+* docs: add third-party library attributions to NOTICE file
+
 ## [0.2.1-next.1](https://github.com/rdkcentral/firebolt-native-transport/compare/v0.2.0...v0.2.1-next.1) (2025-10-23)
 
 
