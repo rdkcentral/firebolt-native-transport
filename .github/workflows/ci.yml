@@ -31,16 +31,20 @@ jobs:
           path: ${{ env.SYSROOT_PATH }}
           key: ${{ runner.os }}-deps-${{ steps.cache-key.outputs.hash }}
 
-      - name: Build and Install Dependencies
-        if: steps.cache-restore.outputs.cache-hit != 'true'
+      - name: Build and Install System-Dependencies
+        if: false && steps.cache-restore.outputs.cache-hit != 'true'
         run: |
           echo "Installing Boost..."
           sudo apt-get update
           sudo apt-get install -y libboost-all-dev
           echo "Copying Boost to SYSROOT..."
+          mkdir -p ${{ env.SYSROOT_PATH }}/include/ ${{ env.SYSROOT_PATH }}/lib/
           sudo cp -r /usr/include/boost ${{ env.SYSROOT_PATH }}/include/
           sudo cp /usr/lib/x86_64-linux-gnu/libboost_* ${{ env.SYSROOT_PATH }}/lib/
 
+      - name: Build and Project Dependencies
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        run: |
           echo "Building dependencies..."
           mkdir -p ${{ env.SYSROOT_PATH }}
           ./.github/scripts/install-deps.sh "${{ env.SYSROOT_PATH }}"
