@@ -19,11 +19,12 @@
 
 #pragma once
 
+#include "firebolttransport_export.h"
 #include "gateway.h"
+#include "logger.h"
 #include "types/fb-errors.h"
 #include "types/json_types.h"
 #include "types/types.h"
-#include "firebolttransport_export.h"
 #include <any>
 #include <map>
 #include <mutex>
@@ -49,15 +50,22 @@ void onPropertyChangedCallback(void *subscriptionDataPtr, const nlohmann::json &
     SubscriptionData *subscriptionData = reinterpret_cast<SubscriptionData *>(subscriptionDataPtr);
     auto notifier = std::any_cast<std::function<void(Args...)>>(subscriptionData->notification);
     JsonType jsonType;
-    jsonType.FromJson(jsonResponse);
-
-    if constexpr (sizeof...(Args) > 1)
+    try
     {
-        std::apply(notifier, jsonType.Value());
+        jsonType.FromJson(jsonResponse);
+        if constexpr (sizeof...(Args) > 1)
+        {
+            std::apply(notifier, jsonType.Value());
+        }
+        else
+        {
+            notifier(jsonType.Value());
+        }
     }
-    else
+    catch (const std::exception &e)
     {
-        notifier(jsonType.Value());
+        FIREBOLT_LOG_ERROR("Event", "Cannot parse event data for event %s, payload: %s",
+                           subscriptionData->eventName.c_str(), jsonResponse.dump().c_str());
     }
 }
 
@@ -76,9 +84,18 @@ public:
         {
             return Result<PropertyType>{result.error()};
         }
-        JsonType jsonResult;
-        jsonResult.FromJson(*result);
-        return Result<PropertyType>{jsonResult.Value()};
+        try
+        {
+            JsonType jsonResult;
+            jsonResult.FromJson(*result);
+            return Result<PropertyType>{jsonResult.Value()};
+        }
+        catch (const std::exception &e)
+        {
+            FIREBOLT_LOG_ERROR("Getter", "Cannot parse data for a getter %s, payload: %s", methodName.c_str(),
+                               result->dump().c_str());
+            return Result<PropertyType>{Firebolt::Error::InvalidParams};
+        }
     }
 
     virtual Result<SubscriptionId> subscribe(void *owner, const std::string &eventName, std::any &&notification,

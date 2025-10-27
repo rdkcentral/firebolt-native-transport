@@ -53,6 +53,11 @@ public:
     static void Log(LogLevel logLevel, const std::string &module, const std::string file, const std::string function,
                     const uint16_t line, const std::string &format, ...);
 
+    static bool IsLogLevelEnabled(LogLevel logLevel)
+    {
+        return logLevel <= _logLevel;
+    }
+
 private:
     static LogLevel _logLevel;
     static bool formatter_addTs;
