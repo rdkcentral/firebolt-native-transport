@@ -8,23 +8,27 @@ die() {
     exit 1
 }
 
+depsFile=".deps"
 cleanBefore=false
+SYSROOT_PATH=
+
 while [[ ! -z ${1:-} ]]; do
     case $1 in
     --clean) cleanBefore=true;;
+    --deps) depsFile="$2"; shift;;
+    --sysroot) SYSROOT_PATH="$2"; shift;;
     *) break;;
     esac; shift
 done
 
-SYSROOT_PATH="${1:-}"
-
 [[ ! -z "${SYSROOT_PATH:-}" ]] || die "SYSROOT_PATH is not set"
-[[ -e .deps ]] || die "dependency file not found"
+[[ -e $depsFile ]] || die "dependency file '$depsFile' not found"
+[[ -e $SYSROOT_PATH ]] || mkdir -p "$SYSROOT_PATH"
 SYSROOT_PATH="$(realpath "$SYSROOT_PATH")"
 
 echo "installation dir: $SYSROOT_PATH"
 
-cat .deps | while read name version url; do
+cat $depsFile | while read name version url; do
     case $name in
     '#'* | '') continue;;
     esac
@@ -37,7 +41,7 @@ cat .deps | while read name version url; do
         case $name in
         nlohmann-json)
             git clone --depth 1 --branch "v$version" "$url" "$dir";;
-        googletest)
+        googletest | firebolt-native-transport)
             curl -sL $url/releases/download/v$version/$name-$version.tar.gz | tar xzf -;;
         *)
             curl -sL $url/archive/refs/tags/$version.tar.gz | tar xzf -;;

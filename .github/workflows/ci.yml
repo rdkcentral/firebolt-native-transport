@@ -9,6 +9,7 @@ on:
 
 env:
   SYSROOT_PATH: ${{ github.workspace }}/deps_install
+  DEPS_FILE: .deps
 
 jobs:
   setup_deps:
@@ -22,7 +23,7 @@ jobs:
 
       - name: Generate Dependency Hash Key
         id: cache-key
-        run: echo "hash=$(sha256sum .deps | awk '{print $1}')" >> $GITHUB_OUTPUT
+        run: echo "hash=$(sha256sum ${{env.DEPS_FILE}} | awk '{print $1}')" >> $GITHUB_OUTPUT
 
       - name: Restore Dependency Cache
         uses: actions/cache@v4
@@ -47,7 +48,7 @@ jobs:
         run: |
           echo "Building dependencies..."
           mkdir -p ${{ env.SYSROOT_PATH }}
-          ./.github/scripts/install-deps.sh "${{ env.SYSROOT_PATH }}"
+          ./.github/scripts/install-deps.sh --deps "${{env.DEPS_FILE}}" --sysroot "${{ env.SYSROOT_PATH }}"
           echo "Dependencies built and installed to ${{ env.SYSROOT_PATH }}"
 
       - name: Cache Save Confirmation
@@ -73,6 +74,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libboost-all-dev
 
+      - name: Get version
+        run: |
+          VERSION=$(git describe --tags --dirty --match "v[0-9]*")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version: $VERSION"
+
       - name: Configure CMake
         run: |
           cmake -B build \
@@ -84,3 +91,17 @@ jobs:
 
       # - name: Run Tests
       #   run: cmake --build build --target check
+
+      - name: Make Release package of Transport sources
+        run: |
+          ./.github/scripts/mk-release-package.sh \
+            --version ${{ env.VERSION }} \
+            --package firebolt-native-transport \
+            --dst ${{ github.workspace }}/release
+
+      - name: Upload Transport package as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: ${{ github.workspace }}/release
+
