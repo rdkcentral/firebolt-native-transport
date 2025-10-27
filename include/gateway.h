@@ -44,7 +44,7 @@ public:
     virtual Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters,
                                     nlohmann::json &response) = 0;
     virtual Firebolt::Error Subscribe(const std::string &event, EventCallback callback, void *usercb) = 0;
-    virtual Firebolt::Error Unsubscribe(const std::string &event) = 0;
+    virtual Firebolt::Error Unsubscribe(const std::string &event, void *usercb) = 0;
 
 #ifdef ENABLE_MANAGE_API
     virtual Firebolt::Error RegisterProviderInterface(const std::string &method, ProviderCallback callback,

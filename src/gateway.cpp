@@ -221,13 +221,14 @@ class Server
 {
     struct CallbackDataEvent
     {
+        std::string eventName;
         const EventCallback lambda;
         void *usercb;
     };
 
-    using EventMap = std::map<std::string, CallbackDataEvent>;
+    using EventList = std::list<CallbackDataEvent>;
 
-    EventMap eventMap;
+    EventList eventList;
     mutable std::mutex eventMap_mtx;
 
     IServerTransport &transport_;
@@ -275,7 +276,7 @@ public:
     {
         {
             std::lock_guard lck(eventMap_mtx);
-            eventMap.clear();
+            eventList.clear();
         }
 #ifdef ENABLE_MANAGE_API
         {
@@ -289,27 +290,43 @@ public:
 
     Firebolt::Error Subscribe(const std::string &event, EventCallback callback, void *usercb)
     {
-        Firebolt::Error status = Firebolt::Error::General;
-
-        CallbackDataEvent callbackData = {callback, usercb};
 
         std::string key = getKeyFromEvent(event);
 
+        CallbackDataEvent callbackData = {key, callback, usercb};
+
         std::lock_guard lck(eventMap_mtx);
-        EventMap::iterator eventIndex = eventMap.find(key);
-        if (eventIndex == eventMap.end())
+        auto eventIt = std::find_if(eventList.begin(), eventList.end(),
+            [&key, usercb](const CallbackDataEvent& e) {
+                return e.eventName == key && e.usercb == usercb;
+            });
+
+        if (eventIt != eventList.end())
         {
-            eventMap.emplace(std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(callbackData));
-            status = Firebolt::Error::None;
+            return Firebolt::Error::General;
         }
 
-        return status;
+        eventList.push_back(callbackData);
+        return Firebolt::Error::None;
     }
 
-    Firebolt::Error Unsubscribe(const std::string &event)
+    Firebolt::Error Unsubscribe(const std::string &event, void *usercb)
     {
         std::lock_guard lck(eventMap_mtx);
-        return eventMap.erase(getKeyFromEvent(event)) > 0 ? Firebolt::Error::None : Firebolt::Error::General;
+
+        std::string key = getKeyFromEvent(event);
+        auto it = std::find_if(eventList.begin(), eventList.end(),
+            [&key, usercb](const CallbackDataEvent& e) {
+                return e.eventName == key && e.usercb == usercb;
+            });
+
+        if (it == eventList.end())
+        {
+            return Firebolt::Error::General;
+        }
+
+        eventList.erase(it);
+        return Firebolt::Error::None;
     }
 
     void Notify(const std::string &method, const nlohmann::json &parameters)
@@ -320,13 +337,35 @@ public:
             std::transform(key.begin(), key.begin() + dotPos, key.begin(),
                    [](unsigned char c) { return std::tolower(c); }); // ignore case of module name when looking for registrants
         }
+
         std::lock_guard lck(eventMap_mtx);
-        EventMap::iterator eventIt = eventMap.find(key);
-        if (eventIt != eventMap.end())
+        for (auto& callback : eventList)
         {
-            CallbackDataEvent &callback = eventIt->second;
-            callback.lambda(callback.usercb, parameters);
+            if (callback.eventName == key)
+            {
+                callback.lambda(callback.usercb, parameters);
+            }
         }
+    }
+
+    bool IsAnySubscriber(const std::string &method)
+    {
+        std::string key = method;
+        size_t dotPos = key.find('.');
+        if (dotPos != std::string::npos) {
+            std::transform(key.begin(), key.begin() + dotPos, key.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+        }
+        std::lock_guard lck(eventMap_mtx);
+
+        for (auto& callback : eventList)
+        {
+            if (callback.eventName == key)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
 #ifdef ENABLE_MANAGE_API
@@ -513,10 +552,16 @@ public:
 
     Firebolt::Error Subscribe(const std::string &event, EventCallback callback, void *usercb) override
     {
+        bool alreadySubscribed = server.IsAnySubscriber(event);
         Firebolt::Error status = server.Subscribe(event, callback, usercb);
         if (status != Firebolt::Error::None)
         {
             return status;
+        }
+
+        if (alreadySubscribed)
+        {
+            return Firebolt::Error::None;
         }
 
         nlohmann::json params;
@@ -529,18 +574,24 @@ public:
         }
         if (status != Firebolt::Error::None)
         {
-            server.Unsubscribe(event);
+            server.Unsubscribe(event, usercb);
         }
         return status;
     }
 
-    Firebolt::Error Unsubscribe(const std::string &event) override
+    Firebolt::Error Unsubscribe(const std::string &event, void *usercb) override
     {
-        Firebolt::Error status = server.Unsubscribe(event);
+        Firebolt::Error status = server.Unsubscribe(event, usercb);
         if (status != Firebolt::Error::None)
         {
             return status;
         }
+
+        if (server.IsAnySubscriber(event))
+        {
+            return Firebolt::Error::None;
+        }
+
         nlohmann::json params;
         params["listen"] = false;
         nlohmann::json result;

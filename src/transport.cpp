@@ -18,6 +18,7 @@
  */
 
 #include "transport.h"
+#include "logger.h"
 #include "types/fb-errors.h"
 #include <assert.h>
 
@@ -108,6 +109,8 @@ Firebolt::Error Transport::Connect(std::string url, MessageCallback onMessage, C
 
     client_.connect(con);
 
+    debugEnabled_ = Logger::IsLogLevelEnabled(FireboltSDK::Logger::LogLevel::Debug);
+
     return Firebolt::Error::None;
 }
 
@@ -153,9 +156,10 @@ Firebolt::Error Transport::Send(const std::string &method, const nlohmann::json 
     msg["id"] = id;
     msg["method"] = method;
     msg["params"] = params;
-#ifdef DEBUG_TRANSPORT
-    std::cout << "send: " << "msg: " << msg.dump() << std::endl;
-#endif
+    if (debugEnabled_)
+    {
+        FIREBOLT_LOG_DEBUG("Transport", "send: %s", msg.dump().c_str());
+    }
 
     websocketpp::lib::error_code ec;
 
@@ -206,11 +210,19 @@ void Transport::on_message(websocketpp::connection_hdl hdl,
     {
         return;
     }
-    nlohmann::json jsonMsg = nlohmann::json::parse(msg->get_payload());
-#ifdef DEBUG_TRANSPORT
-    std::cout << "on_message: " << "msg: " << jsonMsg.dump() << std::endl;
-#endif
-    messageReceiver_(jsonMsg);
+    try
+    {
+        nlohmann::json jsonMsg = nlohmann::json::parse(msg->get_payload());
+        if (debugEnabled_)
+        {
+            FIREBOLT_LOG_DEBUG("Transport", "recived: %s", jsonMsg.dump().c_str());
+        }
+        messageReceiver_(jsonMsg);
+    }
+    catch (const std::exception &e)
+    {
+        FIREBOLT_LOG_ERROR("Transport", "Cannot parse payload: '%s'", msg->get_payload());
+    }
 }
 
 void Transport::on_open(websocketpp::client<websocketpp::config::asio_client> *c, websocketpp::connection_hdl hdl)

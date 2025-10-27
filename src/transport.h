@@ -70,5 +70,6 @@ private:
     websocketpp::lib::shared_ptr<websocketpp::lib::thread> connectionThread_;
     websocketpp::connection_hdl connectionHandle_;
     TransportState connectionStatus_;
+    bool debugEnabled_ = false;
 };
 } // namespace FireboltSDK::Transport

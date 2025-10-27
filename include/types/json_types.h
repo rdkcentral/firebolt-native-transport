@@ -52,8 +52,6 @@ template <typename T> class NL_Json_Basic
 public:
     virtual void FromJson(const nlohmann::json &json) = 0;
     T virtual Value() const = 0;
-
-    void FromString(const std::string &str) { FromJson(nlohmann::json::parse(str)); }
 };
 
 template <typename T> class BasicType : public NL_Json_Basic<T>

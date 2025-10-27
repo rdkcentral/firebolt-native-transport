@@ -47,7 +47,8 @@ public:
         std::lock_guard<std::mutex> lock(mutex_);
         for (auto &subscription : subscriptions_)
         {
-            FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(subscription.second.eventName);
+            void *notificationPtr = reinterpret_cast<void *>(&subscription.second);
+            FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(subscription.second.eventName, notificationPtr);
         }
         subscriptions_.clear();
     }
@@ -81,7 +82,8 @@ public:
         {
             return Result<void>{Error::General};
         }
-        auto errorStatus{FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(it->second.eventName)};
+        void *notificationPtr = reinterpret_cast<void *>(&it->second);
+        auto errorStatus{FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(it->second.eventName, notificationPtr)};
         subscriptions_.erase(it);
         return Result<void>{errorStatus};
     }
@@ -93,7 +95,8 @@ public:
         {
             if (it->second.owner == owner)
             {
-                FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(it->second.eventName);
+                void *notificationPtr = reinterpret_cast<void *>(&it->second);
+                FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(it->second.eventName, notificationPtr);
                 it = subscriptions_.erase(it);
             }
             else
