@@ -86,6 +86,7 @@ jobs:
         run: |
           cmake -B build \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX:PATH="${{ env.SYSROOT_PATH }}/usr" \
             -DSYSROOT_PATH=${{ env.SYSROOT_PATH }}
 
       - name: Build Project
