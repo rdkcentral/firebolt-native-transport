@@ -26,7 +26,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "./.github/scripts/mk-release-package.sh --version ${nextRelease.version}"
+        "prepareCmd": "./.github/scripts/mk-release-package.sh --version ${nextRelease.version} --package firebolt-native-transport"
       }
     ],
     [
