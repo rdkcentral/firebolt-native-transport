@@ -1,3 +1,10 @@
+# [1.0.0-next.2](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.1...v1.0.0-next.2) (2025-10-27)
+
+
+### Features
+
+* thunder post removal ([#12](https://github.com/rdkcentral/firebolt-native-transport/issues/12)) ([804eb5a](https://github.com/rdkcentral/firebolt-native-transport/commit/804eb5a15a4c9ac593f0f25cf00b56749f9d38e1))
+
 # [1.0.0-next.1](https://github.com/rdkcentral/firebolt-native-transport/compare/v0.2.1-next.1...v1.0.0-next.1) (2025-10-23)
 
 
