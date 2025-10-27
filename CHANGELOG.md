@@ -1,3 +1,10 @@
+# [1.0.0-next.3](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.2...v1.0.0-next.3) (2025-10-27)
+
+
+### Bug Fixes
+
+* name of a release package ([#13](https://github.com/rdkcentral/firebolt-native-transport/issues/13)) ([c9182fe](https://github.com/rdkcentral/firebolt-native-transport/commit/c9182fe49f5dbc9304050f7d7f469c2ab1473e3d))
+
 # [1.0.0-next.2](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.1...v1.0.0-next.2) (2025-10-27)
 
 
