@@ -24,6 +24,7 @@
 #include <functional>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <string>
 #include <websocketpp/client.hpp>
 #include <websocketpp/config/asio_no_tls_client.hpp>
@@ -43,9 +44,10 @@ public:
     Transport &operator=(Transport &&) = delete;
     virtual ~Transport();
 
-    Firebolt::Error Connect(std::string url, MessageCallback onMessage, ConnectionCallback onConnectionChange);
+    Firebolt::Error Connect(std::string url, MessageCallback onMessage, ConnectionCallback onConnectionChange,
+                            std::optional<unsigned> transportLoggingInclude = std::nullopt,
+                            std::optional<unsigned> transportLoggingExclude = std::nullopt);
     Firebolt::Error Disconnect();
-    void SetLogging(websocketpp::log::level include, websocketpp::log::level exclude = 0);
     unsigned GetNextMessageID();
     Firebolt::Error Send(const std::string &method, const nlohmann::json &params, const unsigned id);
 #ifdef ENABLE_MANAGE_API
@@ -54,6 +56,7 @@ public:
 
 private:
     void start();
+    void setLogging(websocketpp::log::level include, websocketpp::log::level exclude = 0);
     void on_message(websocketpp::connection_hdl hdl,
                     websocketpp::client<websocketpp::config::asio_client>::message_ptr msg);
     void on_open(websocketpp::client<websocketpp::config::asio_client> *c, websocketpp::connection_hdl hdl);

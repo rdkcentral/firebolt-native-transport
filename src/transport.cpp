@@ -71,7 +71,9 @@ void Transport::start()
     connectionStatus_ = TransportState::Disconnected;
 }
 
-Firebolt::Error Transport::Connect(std::string url, MessageCallback onMessage, ConnectionCallback onConnectionChange)
+Firebolt::Error Transport::Connect(std::string url, MessageCallback onMessage, ConnectionCallback onConnectionChange,
+                                   std::optional<unsigned> transportLoggingInclude,
+                                   std::optional<unsigned> transportLoggingExclude)
 {
     if (connectionStatus_ == TransportState::NotStarted)
     {
@@ -84,16 +86,25 @@ Firebolt::Error Transport::Connect(std::string url, MessageCallback onMessage, C
     messageReceiver_ = onMessage;
     connectionReceiver_ = onConnectionChange;
 
-    SetLogging(websocketpp::log::alevel::all,
-               (websocketpp::log::alevel::frame_header | websocketpp::log::alevel::frame_payload |
-                websocketpp::log::alevel::control));
+    websocketpp::log::level include = websocketpp::log::alevel::all;
+    websocketpp::log::level exclude = (websocketpp::log::alevel::frame_header |
+                                       websocketpp::log::alevel::frame_payload | websocketpp::log::alevel::control);
+    if (transportLoggingInclude.has_value())
+    {
+        include = static_cast<websocketpp::log::level>(transportLoggingInclude.value());
+    }
+    if (transportLoggingExclude.has_value())
+    {
+        exclude = static_cast<websocketpp::log::level>(transportLoggingExclude.value());
+    }
+    setLogging(include, exclude);
 
     websocketpp::lib::error_code ec;
     client::connection_ptr con = client_.get_connection(url, ec);
 
     if (ec)
     {
-        std::cout << "Connect initialization error: " << ec.message() << std::endl;
+        FIREBOLT_LOG_ERROR("Transport", "Could not create connection because: %s", ec.message().c_str());
         return Firebolt::Error::NotConnected;
     }
 
@@ -131,7 +142,7 @@ Firebolt::Error Transport::Disconnect()
     client_.close(connectionHandle_, websocketpp::close::status::going_away, "", ec);
     if (ec)
     {
-        std::cout << "> Error closing connection " << ec.message() << std::endl;
+        FIREBOLT_LOG_ERROR("Transport", "Error closing connection: %s", ec.message().c_str());
         return mapError(ec);
     }
 
@@ -158,7 +169,7 @@ Firebolt::Error Transport::Send(const std::string &method, const nlohmann::json 
     msg["params"] = params;
     if (debugEnabled_)
     {
-        FIREBOLT_LOG_DEBUG("Transport", "send: %s", msg.dump().c_str());
+        FIREBOLT_LOG_DEBUG("Transport", "Send: %s", msg.dump().c_str());
     }
 
     websocketpp::lib::error_code ec;
@@ -166,7 +177,7 @@ Firebolt::Error Transport::Send(const std::string &method, const nlohmann::json 
     client_.send(connectionHandle_, to_string(msg), websocketpp::frame::opcode::text, ec);
     if (ec)
     {
-        std::cout << "> Error sending message: " << ec.message() << std::endl;
+        FIREBOLT_LOG_ERROR("Transport", "Error sending message :%s", ec.message().c_str());
         return mapError(ec);
     }
 
@@ -190,14 +201,14 @@ Firebolt::Error Transport::SendResponse(const unsigned id, const std::string &re
     client_.send(connectionHandle_, to_string(msg), websocketpp::frame::opcode::text, ec);
     if (ec)
     {
-        std::cout << "Send failed, " << ec.message() << std::endl;
+        FIREBOLT_LOG_ERROR("Transport", "Error sending response :%s", ec.message().c_str());
         return mapError(ec);
     }
     return Firebolt::Error::None;
 }
 #endif
 
-void Transport::SetLogging(websocketpp::log::level include, websocketpp::log::level exclude)
+void Transport::setLogging(websocketpp::log::level include, websocketpp::log::level exclude)
 {
     client_.set_access_channels(include);
     client_.clear_access_channels(exclude);
@@ -215,7 +226,7 @@ void Transport::on_message(websocketpp::connection_hdl hdl,
         nlohmann::json jsonMsg = nlohmann::json::parse(msg->get_payload());
         if (debugEnabled_)
         {
-            FIREBOLT_LOG_DEBUG("Transport", "recived: %s", jsonMsg.dump().c_str());
+            FIREBOLT_LOG_DEBUG("Transport", "Recived: %s", jsonMsg.dump().c_str());
         }
         messageReceiver_(jsonMsg);
     }
