@@ -29,6 +29,7 @@
 #include <map>
 #include <mutex>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <string>
 #include <thread>
 
@@ -491,13 +492,14 @@ public:
 
         nlohmann::json userConfig = nlohmann::json::parse(configLine);
         nlohmann::json config;
+
         config["waitTime"] = config_g.waitTime_ms;
         config["log"] = nlohmann::json::parse(
             R"({ "level": "Info", "format": { "ts": true, "location": false, "function": true, "thread": true }})");
         config["wsUrl"] = "ws://127.0.0.1:9998";
-        config["RPCv2"] = true;
 
         config.merge_patch(userConfig);
+
         if (userConfig.contains("logLevel"))
         {
             config["log"]["level"] = userConfig["logLevel"];
@@ -510,6 +512,11 @@ public:
             { "Debug", Logger::LogLevel::Debug }
         };
 
+        if (logLevels.find(config["log"]["level"]) == logLevels.end())
+        {
+            config["log"]["level"] = "Info";
+        }
+
         nlohmann::json logInfo = config["log"];
         nlohmann::json logFormat = logInfo["format"];
         FireboltSDK::Logger::SetLogLevel(logLevels[logInfo["level"]]);
@@ -519,25 +526,47 @@ public:
             logFormat["function"].get<bool>(),
             logFormat["thread"].get<bool>()
         );
+
         connectionChangeListener = onConnectionChange;
-        std::string urlParamsKeys[] = {"RPCv2"};
-        std::string urlParams;
-        for (auto k : urlParamsKeys)
+
+        config_g.waitTime_ms = config["waitTime"].get<unsigned>();
+        std::string url = config["wsUrl"].get<std::string>();
+        if (url.find("?") == std::string::npos)
         {
-            if (config.contains(k))
+            url += "?";
+        }
+        else
+        {
+            url += "&";
+        }
+        url += "RPCv2=true";
+
+        std::optional<unsigned> transportLoggingInclude;
+        std::optional<unsigned> transportLoggingExclude;
+        if (config["log"].contains("transport"))
+        {
+            nlohmann::json transportLog = config["log"]["transport"];
+            if (transportLog.contains("include"))
             {
-                if (config[k].is_boolean())
-                {
-                    urlParams += (urlParams.empty() ? "?" : "&") + k + "=" + (config[k].get<bool>() ? "true" : "false");
-                }
+                transportLoggingInclude = transportLog["include"].get<unsigned>();
+            }
+            if (transportLog.contains("exclude"))
+            {
+                transportLoggingExclude = transportLog["exclude"].get<unsigned>();
             }
         }
-        config_g.waitTime_ms = config["waitTime"].get<unsigned>();
-        std::string url = config["wsUrl"].get<std::string>() + urlParams;
+
         FIREBOLT_LOG_INFO("Gateway", "Connecting to url = %s", url.c_str());
         Firebolt::Error status = transport.Connect(
             url, [this](const nlohmann::json &message) { this->onMessage(message); },
-            [this](const bool connected, Firebolt::Error error) { this->onConnectionChange(connected, error); });
+            [this](const bool connected, Firebolt::Error error) { this->onConnectionChange(connected, error); },
+            transportLoggingInclude, transportLoggingExclude);
+
+        if (status != Firebolt::Error::None)
+        {
+            return status;
+        }
+
         client.Start();
         server.Start();
         return status;
