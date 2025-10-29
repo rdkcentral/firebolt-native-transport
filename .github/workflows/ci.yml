@@ -92,9 +92,6 @@ jobs:
       - name: Build Project
         run: cmake --build build
 
-      # - name: Run Tests
-      #   run: cmake --build build --target check
-
       - name: Make Release package of Transport sources
         run: |
           ./.github/scripts/mk-release-package.sh \
