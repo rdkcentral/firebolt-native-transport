@@ -1,3 +1,10 @@
+# [1.0.0-next.4](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.3...v1.0.0-next.4) (2025-10-29)
+
+
+### Features
+
+* Change initialization ([#15](https://github.com/rdkcentral/firebolt-native-transport/issues/15)) ([8f21eef](https://github.com/rdkcentral/firebolt-native-transport/commit/8f21eef2878e5bbe91481c0308a06a41b9b2bd70))
+
 # [1.0.0-next.3](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.2...v1.0.0-next.3) (2025-10-27)
 
 
