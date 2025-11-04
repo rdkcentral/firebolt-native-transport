@@ -1,3 +1,10 @@
+# [1.0.0-next.5](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.4...v1.0.0-next.5) (2025-11-04)
+
+
+### Bug Fixes
+
+* Use cmake way to control shared/static library ([#16](https://github.com/rdkcentral/firebolt-native-transport/issues/16)) ([62f4d67](https://github.com/rdkcentral/firebolt-native-transport/commit/62f4d677db11d010d21c109050a0f4e934752270))
+
 # [1.0.0-next.4](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.3...v1.0.0-next.4) (2025-10-29)
 
 
