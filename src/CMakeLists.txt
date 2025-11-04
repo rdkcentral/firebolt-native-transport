@@ -26,7 +26,7 @@ file(GLOB SOURCES *.cpp)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 
-add_library(${TARGET} ${FIREBOLT_LIBRARY_TYPE}
+add_library(${TARGET}
     ${SOURCES}
 )
 
