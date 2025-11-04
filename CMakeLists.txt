@@ -45,17 +45,8 @@ endif ()
 set(VERSION ${PROJECT_VERSION})
 message(STATUS "Project version: ${PROJECT_VERSION}")
 
-set(FIREBOLT_TRANSPORT_NAMESPACE ${PROJECT_NAME} CACHE STRING "Namespace of the project")
-set(FIREBOLT_TRANSPORT_WAITTIME 1000 CACHE STRING "Maximum time to wait for Transport layer to get response")
-option(FIREBOLT_ENABLE_STATIC_LIB "Create Firebolt library as Static library" OFF)
+option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(ENABLE_UNIT_TESTS "Build openrpc native test" OFF)
-
-if (FIREBOLT_ENABLE_STATIC_LIB)
-    set(FIREBOLT_LIBRARY_TYPE STATIC)
-    add_compile_definitions(FIREBOLTTRANSPORT_STATIC_DEFINE)
-else ()
-    set(FIREBOLT_LIBRARY_TYPE SHARED)
-endif ()
 
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "${SYSROOT_PATH}/usr" CACHE INTERNAL "" FORCE)
