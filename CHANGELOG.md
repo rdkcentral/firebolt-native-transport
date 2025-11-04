@@ -1,3 +1,10 @@
+# [1.0.0-next.6](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.5...v1.0.0-next.6) (2025-11-04)
+
+
+### Features
+
+* Refactor config ([#17](https://github.com/rdkcentral/firebolt-native-transport/issues/17)) ([453f858](https://github.com/rdkcentral/firebolt-native-transport/commit/453f85838503ba83d6b057902a6960218fa84c37))
+
 # [1.0.0-next.5](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.4...v1.0.0-next.5) (2025-11-04)
 
 
