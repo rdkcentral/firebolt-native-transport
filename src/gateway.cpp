@@ -36,18 +36,10 @@
 namespace FireboltSDK::Transport
 {
 
-struct Config
-{
-    unsigned waitTime_ms;
-    unsigned watchdogCycle_ms;
-    int providerWaitTime;
-};
-
-static Config config_g = {
-    .waitTime_ms = 3000,
-    .watchdogCycle_ms = 500,
-    .providerWaitTime = -1,
-};
+// Runtime configuration used by client/server watchdog and provider wait
+static unsigned runtime_waitTime_ms = 3000;
+static unsigned runtime_watchdogCycle_ms = 500;
+static int runtime_providerWaitTime = -1;
 
 using Timestamp = std::chrono::time_point<std::chrono::steady_clock>;
 using MessageID = uint32_t;
@@ -182,7 +174,7 @@ public:
 private:
     void watchdog()
     {
-        auto watchdogTimer = std::chrono::milliseconds(config_g.watchdogCycle_ms);
+        auto watchdogTimer = std::chrono::milliseconds(runtime_watchdogCycle_ms);
         std::vector<std::shared_ptr<Caller>> outdated;
 
         while (running)
@@ -193,7 +185,7 @@ private:
                 for (auto it = queue.begin(); it != queue.end();)
                 {
                     if (std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second->timestamp).count() >
-                        config_g.waitTime_ms)
+                        runtime_waitTime_ms)
                     {
                         outdated.push_back(it->second);
                         it = queue.erase(it);
@@ -404,7 +396,7 @@ public:
 
     Firebolt::Error RegisterProviderInterface(const std::string &fullMethod, ProviderCallback callback, void *usercb)
     {
-        uint32_t waitTime = config_g.providerWaitTime;
+        uint32_t waitTime = runtime_providerWaitTime;
 
         size_t dotPos = fullMethod.find('.');
         std::string interface = fullMethod.substr(0, dotPos);
@@ -486,24 +478,9 @@ public:
 
     ~GatewayImpl() = default;
 
-    virtual Firebolt::Error Connect(const std::string &configLine, ConnectionChangeCallback onConnectionChange) override
+    virtual Firebolt::Error Connect(const FireboltSDK::Config &cfg, ConnectionChangeCallback onConnectionChange) override
     {
         assert(onConnectionChange != nullptr);
-
-        nlohmann::json userConfig = nlohmann::json::parse(configLine);
-        nlohmann::json config;
-
-        config["waitTime"] = config_g.waitTime_ms;
-        config["log"] = nlohmann::json::parse(
-            R"({ "level": "Info", "format": { "ts": true, "location": false, "function": true, "thread": true }})");
-        config["wsUrl"] = "ws://127.0.0.1:9998";
-
-        config.merge_patch(userConfig);
-
-        if (userConfig.contains("logLevel"))
-        {
-            config["log"]["level"] = userConfig["logLevel"];
-        }
 
         FireboltSDK::JSON::EnumType<Logger::LogLevel> logLevels = {
             { "Error", Logger::LogLevel::Error },
@@ -512,25 +489,20 @@ public:
             { "Debug", Logger::LogLevel::Debug }
         };
 
-        if (logLevels.find(config["log"]["level"]) == logLevels.end())
+        std::string level = cfg.log.level;
+        if (logLevels.find(level) == logLevels.end())
         {
-            config["log"]["level"] = "Info";
+            level = "Info";
         }
 
-        nlohmann::json logInfo = config["log"];
-        nlohmann::json logFormat = logInfo["format"];
-        FireboltSDK::Logger::SetLogLevel(logLevels[logInfo["level"]]);
-        FireboltSDK::Logger::SetFormat(
-            logFormat["ts"].get<bool>(),
-            logFormat["location"].get<bool>(),
-            logFormat["function"].get<bool>(),
-            logFormat["thread"].get<bool>()
-        );
+        FireboltSDK::Logger::SetLogLevel(logLevels[level]);
+        FireboltSDK::Logger::SetFormat(cfg.log.format.ts, cfg.log.format.location, cfg.log.format.function,
+                                       cfg.log.format.thread);
 
         connectionChangeListener = onConnectionChange;
 
-        config_g.waitTime_ms = config["waitTime"].get<unsigned>();
-        std::string url = config["wsUrl"].get<std::string>();
+        runtime_waitTime_ms = cfg.waitTime_ms;
+        std::string url = cfg.wsUrl;
         if (url.find("?") == std::string::npos)
         {
             url += "?";
@@ -541,20 +513,8 @@ public:
         }
         url += "RPCv2=true";
 
-        std::optional<unsigned> transportLoggingInclude;
-        std::optional<unsigned> transportLoggingExclude;
-        if (config["log"].contains("transport"))
-        {
-            nlohmann::json transportLog = config["log"]["transport"];
-            if (transportLog.contains("include"))
-            {
-                transportLoggingInclude = transportLog["include"].get<unsigned>();
-            }
-            if (transportLog.contains("exclude"))
-            {
-                transportLoggingExclude = transportLog["exclude"].get<unsigned>();
-            }
-        }
+        std::optional<unsigned> transportLoggingInclude = cfg.log.transportInclude;
+        std::optional<unsigned> transportLoggingExclude = cfg.log.transportExclude;
 
         FIREBOLT_LOG_INFO("Gateway", "Connecting to url = %s", url.c_str());
         Firebolt::Error status = transport.Connect(
