@@ -331,12 +331,19 @@ public:
                    [](unsigned char c) { return std::tolower(c); }); // ignore case of module name when looking for registrants
         }
 
+        nlohmann::json params;
+        if (parameters.contains("value") && parameters.size() == 1) {
+            params = parameters["value"];
+        } else {
+            params = parameters;
+        }
+
         std::lock_guard lck(eventMap_mtx);
         for (auto& callback : eventList)
         {
             if (callback.eventName == key)
             {
-                callback.lambda(callback.usercb, parameters);
+                callback.lambda(callback.usercb, params);
             }
         }
     }
