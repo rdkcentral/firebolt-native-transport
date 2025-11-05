@@ -1,3 +1,10 @@
+# [1.0.0-next.8](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.7...v1.0.0-next.8) (2025-11-05)
+
+
+### Bug Fixes
+
+* Use synchronization on thread-shared variable ([#19](https://github.com/rdkcentral/firebolt-native-transport/issues/19)) ([3b5777f](https://github.com/rdkcentral/firebolt-native-transport/commit/3b5777ff508731318426b8e1f582a13d76dcc73c))
+
 # [1.0.0-next.7](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.6...v1.0.0-next.7) (2025-11-05)
 
 
