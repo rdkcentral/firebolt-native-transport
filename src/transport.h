@@ -72,7 +72,7 @@ private:
     websocketpp::client<websocketpp::config::asio_client> client_;
     websocketpp::lib::shared_ptr<websocketpp::lib::thread> connectionThread_;
     websocketpp::connection_hdl connectionHandle_;
-    TransportState connectionStatus_;
+    std::atomic<TransportState> connectionStatus_;
     bool debugEnabled_ = false;
 };
 } // namespace FireboltSDK::Transport
