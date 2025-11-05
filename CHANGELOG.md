@@ -1,3 +1,10 @@
+# [1.0.0-next.7](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.6...v1.0.0-next.7) (2025-11-05)
+
+
+### Bug Fixes
+
+* In event payload primitive object is wrapped into { value: VALUE } ([#18](https://github.com/rdkcentral/firebolt-native-transport/issues/18)) ([1af3278](https://github.com/rdkcentral/firebolt-native-transport/commit/1af327866f5c4f1cd3838f2c4afa7cfe04bd96e4))
+
 # [1.0.0-next.6](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.5...v1.0.0-next.6) (2025-11-04)
 
 
