@@ -620,21 +620,33 @@ public:
 private:
     void onMessage(const nlohmann::json &message)
     {
+        if (message.contains("id") && (message.contains("result") || message.contains("error")))
+        {
+            client.Response(message);
+            return;
+        }
         if (message.contains("method"))
         {
             if (message.contains("id"))
             {
-                server.Request(message["id"], message["method"], message["params"]);
+                nlohmann::json params;
+                if (message.contains("params"))
+                {
+                    params = message["params"];
+                }
+                server.Request(message["id"], message["method"], params);
             }
             else
             {
+                if (message.contains("params") == false) {
+                    FIREBOLT_LOG_ERROR("Gateway", "Invalid notification-payload received: %s", message.dump().c_str());
+                    return;
+                }
                 server.Notify(message["method"], message["params"]);
             }
+            return;
         }
-        else
-        {
-            client.Response(message);
-        }
+        FIREBOLT_LOG_ERROR("Gateway", "Invalid payload received: %s", message.dump().c_str());
     }
 
     void onConnectionChange(const bool connected, Firebolt::Error error) { connectionChangeListener(connected, error); }
