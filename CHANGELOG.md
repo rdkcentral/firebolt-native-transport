@@ -1,3 +1,10 @@
+# [1.0.0-next.9](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.8...v1.0.0-next.9) (2025-11-06)
+
+
+### Bug Fixes
+
+* Protect against incorrect payloads ([#20](https://github.com/rdkcentral/firebolt-native-transport/issues/20)) ([f422118](https://github.com/rdkcentral/firebolt-native-transport/commit/f42211840a7670572552842c8cae329b5412fbea))
+
 # [1.0.0-next.8](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.7...v1.0.0-next.8) (2025-11-05)
 
 
