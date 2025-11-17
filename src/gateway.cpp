@@ -58,9 +58,6 @@ class IServerTransport
 {
 public:
     virtual ~IServerTransport() = default;
-#ifdef ENABLE_MANAGE_API
-    virtual void SendResponse(unsigned id, const std::string &response) = 0;
-#endif
 };
 
 class Client
@@ -226,26 +223,6 @@ class Server
 
     IServerTransport &transport_;
 
-#ifdef ENABLE_MANAGE_API
-    using DispatchFunctionProvider = std::function<std::string(const nlohmann::json &parameters, void *)>;
-
-    struct Method
-    {
-        std::string name;
-        DispatchFunctionProvider lambda;
-        void *usercb;
-    };
-
-    struct Interface
-    {
-        std::string name;
-        std::list<Method> methods;
-    };
-
-    std::map<std::string, Interface> providerMap;
-    mutable std::mutex providers_mtx;
-#endif
-
     std::string getKeyFromEvent(const std::string &event)
     {
         std::string key = event;
@@ -271,12 +248,6 @@ public:
             std::lock_guard lck(eventMap_mtx);
             eventList.clear();
         }
-#ifdef ENABLE_MANAGE_API
-        {
-            std::lock_guard lck(providers_mtx);
-            providerMap.clear();
-        }
-#endif
     }
 
     void Start() {}
@@ -367,107 +338,6 @@ public:
         }
         return false;
     }
-
-#ifdef ENABLE_MANAGE_API
-    void Request(unsigned id, const std::string &method, const nlohmann::json &parameters)
-    {
-        size_t dotPos = method.find('.');
-        if (dotPos == std::string::npos)
-        {
-            return;
-        }
-        std::string interface = method.substr(0, dotPos);
-        ;
-        std::string methodName = method.substr(dotPos + 1);
-        std::lock_guard lck(providers_mtx);
-        auto provider = providerMap.find(interface);
-        if (provider == providerMap.end())
-        {
-            return;
-        }
-        auto &methods = provider->second.methods;
-        auto it = methods.begin();
-        nlohmann::json params;
-        params["parameters"] = parameters;
-        while (it != methods.end())
-        {
-            it = std::find_if(it, methods.end(), [&methodName](const Method &m) { return m.name == methodName; });
-            if (it != methods.end())
-            {
-                std::string response = it->lambda(parameters.dump(), it->usercb);
-                transport_.SendResponse(id, response);
-                break;
-            }
-        }
-    }
-
-    Firebolt::Error RegisterProviderInterface(const std::string &fullMethod, ProviderCallback callback, void *usercb)
-    {
-        uint32_t waitTime = runtime_providerWaitTime;
-
-        size_t dotPos = fullMethod.find('.');
-        std::string interface = fullMethod.substr(0, dotPos);
-        std::string method = fullMethod.substr(dotPos + 1);
-        if (method.size() > 2 && method.substr(0, 2) == "on")
-        {
-            method[2] = std::tolower(method[2]);
-            method.erase(0, 2); // erase "on"
-        }
-
-        std::function<std::string(void *usercb, const nlohmann::json &params)> actualCallback = callback;
-        DispatchFunctionProvider lambda = [actualCallback, method, waitTime](const nlohmann::json &params, void *usercb)
-        { return actualCallback(usercb, params); };
-        std::lock_guard lck(providers_mtx);
-        if (providerMap.find(interface) == providerMap.end())
-        {
-            Interface i = {
-                .name = interface,
-            };
-            i.methods.push_back({
-                .name = method,
-                .lambda = lambda,
-                .usercb = usercb,
-            });
-            providerMap[interface] = i;
-        }
-        else
-        {
-            auto &i = providerMap[interface];
-            auto it = std::find_if(i.methods.begin(), i.methods.end(), [&method, usercb](const Method &m)
-                                   { return m.name == method && m.usercb == usercb; });
-            if (it == i.methods.end())
-            {
-                i.methods.push_back({
-                    .name = method,
-                    .lambda = lambda,
-                    .usercb = usercb,
-                });
-            }
-        }
-        return Firebolt::Error::None;
-    }
-
-    Firebolt::Error UnregisterProviderInterface(const std::string &interface, const std::string &method, void *usercb)
-    {
-        std::lock_guard lck(providers_mtx);
-        try
-        {
-            Interface &i = providerMap.at(interface);
-            auto it = std::find_if(i.methods.begin(), i.methods.end(), [&method, usercb](const Method &m)
-                                   { return m.name == method && m.usercb == usercb; });
-            if (it != i.methods.end())
-            {
-                i.methods.erase(it);
-            }
-        }
-        catch (const std::out_of_range &e)
-        {
-        }
-        return Firebolt::Error::None;
-    }
-#else
-    void Request(unsigned id, const std::string &method, const nlohmann::json &parameters) {}
-#endif
 };
 
 class GatewayImpl : public IGateway,
@@ -599,24 +469,6 @@ public:
         return status;
     }
 
-#ifdef ENABLE_MANAGE_API
-    Firebolt::Error RegisterProviderInterface(const std::string &method, ProviderCallback callback, void *usercb) override
-    {
-        Firebolt::Error status = server.RegisterProviderInterface(method, callback, usercb);
-        if (status != Firebolt::Error::None)
-        {
-            return status;
-        }
-        return status;
-    }
-
-    Firebolt::Error UnregisterProviderInterface(const std::string &interface, const std::string &method,
-                                                void *usercb) override
-    {
-        return server.UnregisterProviderInterface(interface, method, usercb);
-    }
-#endif
-
 private:
     void onMessage(const nlohmann::json &message)
     {
@@ -629,12 +481,7 @@ private:
         {
             if (message.contains("id"))
             {
-                nlohmann::json params;
-                if (message.contains("params"))
-                {
-                    params = message["params"];
-                }
-                server.Request(message["id"], message["method"], params);
+                FIREBOLT_LOG_ERROR("Gateway", "Invalid payload received (id is present): %s", message.dump().c_str());
             }
             else
             {
@@ -657,10 +504,6 @@ private:
     {
         return transport.Send(method, parameters, id);
     }
-
-#ifdef ENABLE_MANAGE_API
-    void SendResponse(unsigned id, const std::string &response) override { transport.SendResponse(id, response); }
-#endif
 };
 
 IGateway &GetGatewayInstance()
