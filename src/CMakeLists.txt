@@ -21,6 +21,8 @@ include(CMakePackageConfigHelpers)
 set(TARGET ${PROJECT_NAME})
 message("Setup ${TARGET} v${PROJECT_VERSION}")
 
+add_compile_options(-Wall -Wextra -Wpedantic)
+
 file(GLOB SOURCES *.cpp)
 
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)

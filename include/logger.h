@@ -51,7 +51,7 @@ public:
     static void SetLogLevel(LogLevel logLevel);
     static void SetFormat(bool addTs, bool addLocation, bool addFunction, bool addThreadId);
     static void Log(LogLevel logLevel, const std::string &module, const std::string file, const std::string function,
-                    const uint16_t line, const std::string &format, ...);
+                    const uint16_t line, const char *format, ...) __attribute__((format(printf, 6, 7)));
 
     static bool IsLogLevelEnabled(LogLevel logLevel)
     {

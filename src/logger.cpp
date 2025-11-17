@@ -70,7 +70,7 @@ void Logger::SetFormat(bool addTs, bool addLocation, bool addFunction, bool addT
 }
 
 void Logger::Log(LogLevel logLevel, const std::string &module, const std::string file, const std::string function,
-                 const uint16_t line, const std::string &format, ...)
+                 const uint16_t line, const char* format, ...)
 {
     if (logLevel > _logLevel)
     {
@@ -82,7 +82,7 @@ void Logger::Log(LogLevel logLevel, const std::string &module, const std::string
     va_list arg;
     char msg[Logger::MaxBufSize];
     va_start(arg, format);
-    int length = vsnprintf(msg, Logger::MaxBufSize, format.c_str(), arg);
+    int length = vsnprintf(msg, Logger::MaxBufSize, format, arg);
     va_end(arg);
 
     uint32_t position = (length >= Logger::MaxBufSize) ? (Logger::MaxBufSize - 1) : length;

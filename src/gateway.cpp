@@ -39,7 +39,6 @@ namespace FireboltSDK::Transport
 // Runtime configuration used by client/server watchdog and provider wait
 static unsigned runtime_waitTime_ms = 3000;
 static unsigned runtime_watchdogCycle_ms = 500;
-static int runtime_providerWaitTime = -1;
 
 using Timestamp = std::chrono::time_point<std::chrono::steady_clock>;
 using MessageID = uint32_t;
@@ -436,7 +435,7 @@ public:
         status = client.Request(event, params, result);
         if (status == Firebolt::Error::None && (!result.contains("listening") || !result["listening"].get<bool>()))
         {
-            status == Firebolt::Error::General;
+            status = Firebolt::Error::General;
         }
         if (status != Firebolt::Error::None)
         {
@@ -464,7 +463,7 @@ public:
         status = client.Request(event, params, result);
         if (status == Firebolt::Error::None && (!result.contains("listening") || result["listening"].get<bool>()))
         {
-            status == Firebolt::Error::General;
+            status = Firebolt::Error::General;
         }
         return status;
     }

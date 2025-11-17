@@ -217,6 +217,7 @@ void Transport::setLogging(websocketpp::log::level include, websocketpp::log::le
 void Transport::on_message(websocketpp::connection_hdl hdl,
                            websocketpp::client<websocketpp::config::asio_client>::message_ptr msg)
 {
+    (void)hdl; //unused
     if (msg->get_opcode() != websocketpp::frame::opcode::text)
     {
         return;
@@ -232,7 +233,7 @@ void Transport::on_message(websocketpp::connection_hdl hdl,
     }
     catch (const std::exception &e)
     {
-        FIREBOLT_LOG_ERROR("Transport", "Cannot parse payload: '%s'", msg->get_payload());
+        FIREBOLT_LOG_ERROR("Transport", "Cannot parse payload: '%s'", msg->get_payload().c_str());
     }
 }
 
