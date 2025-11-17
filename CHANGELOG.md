@@ -1,3 +1,15 @@
+# [1.0.0-next.10](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.9...v1.0.0-next.10) (2025-11-17)
+
+
+### Bug Fixes
+
+* Add protection for incorrect parameters for printf-kind functions ([2f3bfab](https://github.com/rdkcentral/firebolt-native-transport/commit/2f3bfabb40affa9cb997f2042bbb05ca1bcdba87))
+
+
+### Features
+
+* Remove part of implementation related to manage ([50238a2](https://github.com/rdkcentral/firebolt-native-transport/commit/50238a29b2e2174288781a5261263a5f17e289e3))
+
 # [1.0.0-next.9](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.8...v1.0.0-next.9) (2025-11-06)
 
 
