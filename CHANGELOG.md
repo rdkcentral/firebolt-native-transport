@@ -1,3 +1,10 @@
+# [1.0.0-next.11](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.10...v1.0.0-next.11) (2025-11-18)
+
+
+### Features
+
+* Update event payload to agreed version ([#21](https://github.com/rdkcentral/firebolt-native-transport/issues/21)) ([dd50e16](https://github.com/rdkcentral/firebolt-native-transport/commit/dd50e168da07c798985576837240386d9442eaf1))
+
 # [1.0.0-next.10](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.9...v1.0.0-next.10) (2025-11-17)
 
 
