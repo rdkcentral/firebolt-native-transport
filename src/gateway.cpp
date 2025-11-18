@@ -222,22 +222,6 @@ class Server
 
     IServerTransport &transport_;
 
-    std::string getKeyFromEvent(const std::string &event)
-    {
-        std::string key = event;
-        size_t dotPos = key.find('.');
-        if (dotPos != std::string::npos) {
-            std::transform(key.begin(), key.begin() + dotPos, key.begin(),
-                   [](unsigned char c) { return std::tolower(c); }); // ignore case of module name
-            if (dotPos + 3 < key.size() && key.substr(dotPos + 1, 2) == "on")
-            {
-                key[dotPos + 3] = std::tolower(key[dotPos + 3]); // make lower-case the first latter after ".on"
-                key.erase(dotPos + 1, 2); // erase "on"
-            }
-        }
-        return key;
-    }
-
 public:
     Server(IServerTransport &transport) : transport_(transport) {}
 
@@ -253,16 +237,11 @@ public:
 
     Firebolt::Error Subscribe(const std::string &event, EventCallback callback, void *usercb)
     {
-
-        std::string key = getKeyFromEvent(event);
-
-        CallbackDataEvent callbackData = {key, callback, usercb};
+        CallbackDataEvent callbackData = {event, callback, usercb};
 
         std::lock_guard lck(eventMap_mtx);
-        auto eventIt = std::find_if(eventList.begin(), eventList.end(),
-            [&key, usercb](const CallbackDataEvent& e) {
-                return e.eventName == key && e.usercb == usercb;
-            });
+        auto eventIt = std::find_if(eventList.begin(), eventList.end(), [&event, usercb](const CallbackDataEvent &e)
+                                    { return e.eventName == event && e.usercb == usercb; });
 
         if (eventIt != eventList.end())
         {
@@ -277,11 +256,8 @@ public:
     {
         std::lock_guard lck(eventMap_mtx);
 
-        std::string key = getKeyFromEvent(event);
-        auto it = std::find_if(eventList.begin(), eventList.end(),
-            [&key, usercb](const CallbackDataEvent& e) {
-                return e.eventName == key && e.usercb == usercb;
-            });
+        auto it = std::find_if(eventList.begin(), eventList.end(), [&event, usercb](const CallbackDataEvent &e)
+                               { return e.eventName == event && e.usercb == usercb; });
 
         if (it == eventList.end())
         {
@@ -295,12 +271,6 @@ public:
     void Notify(const std::string &method, const nlohmann::json &parameters)
     {
         std::string key = method;
-        size_t dotPos = key.find('.');
-        if (dotPos != std::string::npos) {
-            std::transform(key.begin(), key.begin() + dotPos, key.begin(),
-                   [](unsigned char c) { return std::tolower(c); }); // ignore case of module name when looking for registrants
-        }
-
         nlohmann::json params;
         if (parameters.contains("value") && parameters.size() == 1) {
             params = parameters["value"];
@@ -433,10 +403,6 @@ public:
         params["listen"] = true;
         nlohmann::json result;
         status = client.Request(event, params, result);
-        if (status == Firebolt::Error::None && (!result.contains("listening") || !result["listening"].get<bool>()))
-        {
-            status = Firebolt::Error::General;
-        }
         if (status != Firebolt::Error::None)
         {
             server.Unsubscribe(event, usercb);
@@ -461,10 +427,6 @@ public:
         params["listen"] = false;
         nlohmann::json result;
         status = client.Request(event, params, result);
-        if (status == Firebolt::Error::None && (!result.contains("listening") || result["listening"].get<bool>()))
-        {
-            status = Firebolt::Error::General;
-        }
         return status;
     }
 
