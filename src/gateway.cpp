@@ -20,8 +20,8 @@
 #include "gateway.h"
 #include "logger.h"
 #include "transport.h"
-#include "types/types.h"
-#include "types/json_types.h"
+#include "types.h"
+#include "json_types.h"
 #include <assert.h>
 #include <chrono>
 #include <condition_variable>

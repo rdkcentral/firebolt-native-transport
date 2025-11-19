@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "types/types.h"
+#include "types.h"
 #include <atomic>
 #include <functional>
 #include <iostream>

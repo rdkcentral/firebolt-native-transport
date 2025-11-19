@@ -19,7 +19,7 @@
 
 #include "transport.h"
 #include "logger.h"
-#include "types/types.h"
+#include "types.h"
 #include <assert.h>
 
 namespace Firebolt::Transport
