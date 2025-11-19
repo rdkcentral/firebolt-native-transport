@@ -21,7 +21,7 @@
 
 #include "firebolttransport_export.h"
 #include "config.h"
-#include "types/types.h"
+#include "types.h"
 #include <functional>
 #include <nlohmann/json.hpp>
 #include <optional>

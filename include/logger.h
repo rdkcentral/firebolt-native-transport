@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "types/types.h"
+#include "types.h"
 #include "firebolttransport_export.h"
 #include <stdint.h>
 #include <string>

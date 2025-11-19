@@ -22,8 +22,8 @@
 #include "firebolttransport_export.h"
 #include "gateway.h"
 #include "logger.h"
-#include "types/json_types.h"
-#include "types/types.h"
+#include "json_types.h"
+#include "types.h"
 #include <any>
 #include <map>
 #include <mutex>
