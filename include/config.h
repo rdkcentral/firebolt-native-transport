@@ -19,11 +19,11 @@
 
 #pragma once
 
-#include "types/fb-errors.h"
+#include "types/types.h"
 #include <optional>
 #include <string>
 
-namespace FireboltSDK
+namespace Firebolt
 {
 /**
  * @brief Configuration used to establish a connection to the gateway transport.
@@ -37,7 +37,7 @@ struct Config
     unsigned waitTime_ms = 3000;
 
     /**
-     * @brief Log format settings used by the SDK logger.
+     * @brief Log format settings used by the Firebolt logger.
      */
     struct LogFormat
     {
@@ -59,8 +59,8 @@ struct Config
      */
     struct LogSettings
     {
-        /** Log level name: "Error", "Warning", "Info", or "Debug". */
-        std::string level = "Info";
+        /** Log level */
+        LogLevel level = LogLevel::Info;
         /** Optional include mask for transport logging. */
         std::optional<unsigned> transportInclude;
         /** Optional exclude mask for transport logging. */
@@ -76,4 +76,4 @@ struct Config
     int providerWaitTime = -1;
 };
 
-} // namespace FireboltSDK
+} // namespace Firebolt

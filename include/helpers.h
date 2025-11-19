@@ -22,7 +22,6 @@
 #include "firebolttransport_export.h"
 #include "gateway.h"
 #include "logger.h"
-#include "types/fb-errors.h"
 #include "types/json_types.h"
 #include "types/types.h"
 #include <any>

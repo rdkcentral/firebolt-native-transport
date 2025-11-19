@@ -20,7 +20,7 @@
 #include "gateway.h"
 #include "logger.h"
 #include "transport.h"
-#include "types/fb-errors.h"
+#include "types/types.h"
 #include "types/json_types.h"
 #include <assert.h>
 #include <chrono>
@@ -33,7 +33,7 @@
 #include <string>
 #include <thread>
 
-namespace FireboltSDK::Transport
+namespace Firebolt::Transport
 {
 
 // Runtime configuration used by client/server watchdog and provider wait
@@ -324,25 +324,12 @@ public:
 
     ~GatewayImpl() = default;
 
-    virtual Firebolt::Error Connect(const FireboltSDK::Config &cfg, ConnectionChangeCallback onConnectionChange) override
+    virtual Firebolt::Error Connect(const Firebolt::Config &cfg, ConnectionChangeCallback onConnectionChange) override
     {
         assert(onConnectionChange != nullptr);
 
-        FireboltSDK::JSON::EnumType<Logger::LogLevel> logLevels = {
-            { "Error", Logger::LogLevel::Error },
-            { "Warning", Logger::LogLevel::Warning },
-            { "Info", Logger::LogLevel::Info },
-            { "Debug", Logger::LogLevel::Debug }
-        };
-
-        std::string level = cfg.log.level;
-        if (logLevels.find(level) == logLevels.end())
-        {
-            level = "Info";
-        }
-
-        FireboltSDK::Logger::SetLogLevel(logLevels[level]);
-        FireboltSDK::Logger::SetFormat(cfg.log.format.ts, cfg.log.format.location, cfg.log.format.function,
+        Firebolt::Logger::SetLogLevel(cfg.log.level);
+        Firebolt::Logger::SetFormat(cfg.log.format.ts, cfg.log.format.location, cfg.log.format.function,
                                        cfg.log.format.thread);
 
         connectionChangeListener = onConnectionChange;
@@ -473,4 +460,4 @@ IGateway &GetGatewayInstance()
     return instance;
 }
 
-} // namespace FireboltSDK::Transport
+} // namespace Firebolt::Transport

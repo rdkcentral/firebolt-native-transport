@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include "logger.h"
-#include "types/fb-errors.h"
+#include "types/types.h"
 #include <chrono>
 #include <cstdarg>
 #include <cstring>
@@ -29,33 +29,33 @@
 #include <syslog.h>
 #endif
 
-namespace FireboltSDK
+namespace Firebolt
 {
-/* static */ Logger::LogLevel Logger::_logLevel = Logger::LogLevel::Error;
+/* static */ LogLevel Logger::_logLevel = LogLevel::Error;
 /* static */ bool Logger::formatter_addTs = true;
 /* static */ bool Logger::formatter_addThreadId = true;
 /* static */ bool Logger::formatter_addLocation = false;
 /* static */ bool Logger::formatter_addFunction = true;
 
-std::map<FireboltSDK::Logger::LogLevel, const char *> _logLevelNames = {
-    {Logger::LogLevel::Error, "Error"},
-    {Logger::LogLevel::Warning, "Warning"},
-    {Logger::LogLevel::Info, "Info"},
-    {Logger::LogLevel::Debug, "Debug"},
+std::map<Firebolt::LogLevel, const char *> _logLevelNames = {
+    {LogLevel::Error, "Error"},
+    {LogLevel::Warning, "Warning"},
+    {LogLevel::Info, "Info"},
+    {LogLevel::Debug, "Debug"},
 };
 
 #ifdef ENABLE_SYSLOG
-std::map<FireboltSDK::Logger::LogLevel, int> _logLevel2SysLog = {
-    {Logger::LogLevel::Error, LOG_ERR},
-    {Logger::LogLevel::Warning, LOG_WARNING},
-    {Logger::LogLevel::Info, LOG_INFO},
-    {Logger::LogLevel::Debug, LOG_DEBUG},
+std::map<Firebolt::LogLevel, int> _logLevel2SysLog = {
+    {LogLevel::Error, LOG_ERR},
+    {LogLevel::Warning, LOG_WARNING},
+    {LogLevel::Info, LOG_INFO},
+    {LogLevel::Debug, LOG_DEBUG},
 };
 #endif
 
-void Logger::SetLogLevel(Logger::LogLevel logLevel)
+void Logger::SetLogLevel(LogLevel logLevel)
 {
-    if (logLevel < Logger::LogLevel::MaxLevel)
+    if (logLevel < LogLevel::MaxLevel)
     {
         _logLevel = logLevel;
     }
@@ -160,4 +160,4 @@ void Logger::Log(LogLevel logLevel, const std::string &module, const std::string
     fflush(stderr);
 #endif
 }
-} // namespace FireboltSDK
+} // namespace Firebolt

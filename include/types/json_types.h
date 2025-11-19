@@ -25,7 +25,7 @@
 #include <nlohmann/json.hpp>
 #include <string>
 
-namespace FireboltSDK::JSON
+namespace Firebolt::JSON
 {
 
 struct ICaseComparator
@@ -89,4 +89,4 @@ private:
     std::vector<T2> value_;
 };
 
-} // namespace FireboltSDK::JSON
+} // namespace Firebolt::JSON

@@ -18,28 +18,18 @@
 
 #pragma once
 
-#include "types/fb-errors.h"
+#include "types/types.h"
 #include "firebolttransport_export.h"
 #include <stdint.h>
 #include <string>
 #include <typeinfo>
 
-namespace FireboltSDK
+namespace Firebolt
 {
 class FIREBOLTTRANSPORT_EXPORT Logger
 {
 private:
     static constexpr uint16_t MaxBufSize = 1024;
-
-public:
-    enum class LogLevel : uint8_t
-    {
-        Error,
-        Warning,
-        Info,
-        Debug,
-        MaxLevel
-    };
 
 public:
     Logger() = default;
@@ -67,8 +57,8 @@ private:
 };
 }
 
-#define FIREBOLT_LOG(level, module, ...)   do { FireboltSDK::Logger::Log(level, module, __FILE__, __func__, __LINE__, __VA_ARGS__); } while (0)
-#define FIREBOLT_LOG_ERROR(module, ...)    do { FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Error, module, __VA_ARGS__); } while (0)
-#define FIREBOLT_LOG_WARNING(module, ...)  do { FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Warning, module, __VA_ARGS__); } while (0)
-#define FIREBOLT_LOG_INFO(module, ...)     do { FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Info, module, __VA_ARGS__); } while (0)
-#define FIREBOLT_LOG_DEBUG(module, ...)    do { FIREBOLT_LOG(FireboltSDK::Logger::LogLevel::Debug, module, __VA_ARGS__); } while (0)
+#define FIREBOLT_LOG(level, module, ...)   do { Firebolt::Logger::Log(level, module, __FILE__, __func__, __LINE__, __VA_ARGS__); } while (0)
+#define FIREBOLT_LOG_ERROR(module, ...)    do { FIREBOLT_LOG(Firebolt::LogLevel::Error, module, __VA_ARGS__); } while (0)
+#define FIREBOLT_LOG_WARNING(module, ...)  do { FIREBOLT_LOG(Firebolt::LogLevel::Warning, module, __VA_ARGS__); } while (0)
+#define FIREBOLT_LOG_INFO(module, ...)     do { FIREBOLT_LOG(Firebolt::LogLevel::Info, module, __VA_ARGS__); } while (0)
+#define FIREBOLT_LOG_DEBUG(module, ...)    do { FIREBOLT_LOG(Firebolt::LogLevel::Debug, module, __VA_ARGS__); } while (0)
