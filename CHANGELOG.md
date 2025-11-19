@@ -1,3 +1,10 @@
+# [1.0.0-next.13](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.12...v1.0.0-next.13) (2025-11-19)
+
+
+### Features
+
+* Firebolt headers should be referenced with 'Firebolt/' prefix ([#23](https://github.com/rdkcentral/firebolt-native-transport/issues/23)) ([093065d](https://github.com/rdkcentral/firebolt-native-transport/commit/093065d5bd84e7f0319b4455b5437c608aab3bda))
+
 # [1.0.0-next.12](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.11...v1.0.0-next.12) (2025-11-19)
 
 
