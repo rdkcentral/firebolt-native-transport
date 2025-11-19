@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "types/fb-errors.h"
+#include "types/types.h"
 #include <atomic>
 #include <functional>
 #include <iostream>
@@ -29,7 +29,7 @@
 #include <websocketpp/client.hpp>
 #include <websocketpp/config/asio_no_tls_client.hpp>
 
-namespace FireboltSDK::Transport
+namespace Firebolt::Transport
 {
 using MessageCallback = std::function<void(const nlohmann::json &message)>;
 using ConnectionCallback = std::function<void(const bool connected, Firebolt::Error error)>;
@@ -75,4 +75,4 @@ private:
     std::atomic<TransportState> connectionStatus_;
     bool debugEnabled_ = false;
 };
-} // namespace FireboltSDK::Transport
+} // namespace Firebolt::Transport

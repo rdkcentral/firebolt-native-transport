@@ -20,14 +20,14 @@
 #pragma once
 
 #include "firebolttransport_export.h"
-#include "firebolt_config.h"
-#include "types/fb-errors.h"
+#include "config.h"
+#include "types/types.h"
 #include <functional>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
 
-namespace FireboltSDK::Transport
+namespace Firebolt::Transport
 {
 using EventCallback = std::function<void(void *usercb, const nlohmann::json &params)>;
 using ConnectionChangeCallback = std::function<void(const bool connected, const Firebolt::Error error)>;
@@ -40,7 +40,7 @@ class IGateway
 public:
     virtual ~IGateway();
 
-    virtual Firebolt::Error Connect(const FireboltSDK::Config &config, ConnectionChangeCallback onConnectionChange) = 0;
+    virtual Firebolt::Error Connect(const Firebolt::Config &config, ConnectionChangeCallback onConnectionChange) = 0;
     virtual Firebolt::Error Disconnect() = 0;
 
     virtual Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters,
@@ -57,4 +57,4 @@ public:
 };
 
 FIREBOLTTRANSPORT_EXPORT IGateway &GetGatewayInstance();
-} // namespace FireboltSDK::Transport
+} // namespace Firebolt::Transport

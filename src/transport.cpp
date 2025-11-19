@@ -19,10 +19,10 @@
 
 #include "transport.h"
 #include "logger.h"
-#include "types/fb-errors.h"
+#include "types/types.h"
 #include <assert.h>
 
-namespace FireboltSDK::Transport
+namespace Firebolt::Transport
 {
 
 using client = websocketpp::client<websocketpp::config::asio_client>;
@@ -120,7 +120,7 @@ Firebolt::Error Transport::Connect(std::string url, MessageCallback onMessage, C
 
     client_.connect(con);
 
-    debugEnabled_ = Logger::IsLogLevelEnabled(FireboltSDK::Logger::LogLevel::Debug);
+    debugEnabled_ = Logger::IsLogLevelEnabled(Firebolt::LogLevel::Debug);
 
     return Firebolt::Error::None;
 }
@@ -227,7 +227,7 @@ void Transport::on_message(websocketpp::connection_hdl hdl,
         nlohmann::json jsonMsg = nlohmann::json::parse(msg->get_payload());
         if (debugEnabled_)
         {
-            FIREBOLT_LOG_DEBUG("Transport", "Recived: %s", jsonMsg.dump().c_str());
+            FIREBOLT_LOG_DEBUG("Transport", "Received: %s", jsonMsg.dump().c_str());
         }
         messageReceiver_(jsonMsg);
     }
@@ -259,4 +259,4 @@ void Transport::on_fail(websocketpp::client<websocketpp::config::asio_client> *c
     connectionReceiver_(false, mapError(con->get_ec()));
 }
 
-} // namespace FireboltSDK::Transport
+} // namespace Firebolt::Transport

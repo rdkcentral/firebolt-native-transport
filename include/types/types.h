@@ -19,7 +19,6 @@
 
 #pragma once
 
-#include "types/fb-errors.h"
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -27,6 +26,33 @@
 
 namespace Firebolt
 {
+
+enum class Error : int32_t
+{
+    None = 0,
+    General = 1,
+    Timedout = 2,
+    NotConnected = 3,
+    AlreadyConnected = 4,
+    // AuthenticationError, ?
+    InvalidRequest = -32600,
+    MethodNotFound = -32601,
+    InvalidParams = -32602,
+    CapabilityNotAvaialbale = -50300,
+    CapabilityNotSupported = -50100,
+    CapabilityGet = -50200,
+    CapabilityNotPermitted = -40300,
+};
+
+enum class LogLevel : uint8_t
+{
+    Error,
+    Warning,
+    Info,
+    Debug,
+    MaxLevel
+};
+
 using SubscriptionId = std::uint64_t;
 
 template <typename T> class Result

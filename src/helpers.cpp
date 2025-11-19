@@ -48,7 +48,7 @@ public:
         for (auto &subscription : subscriptions_)
         {
             void *notificationPtr = reinterpret_cast<void *>(&subscription.second);
-            FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(subscription.second.eventName, notificationPtr);
+            Firebolt::Transport::GetGatewayInstance().Unsubscribe(subscription.second.eventName, notificationPtr);
         }
         subscriptions_.clear();
     }
@@ -65,13 +65,13 @@ public:
         {
             p["value"] = parameters;
         }
-        return Result<void>{FireboltSDK::Transport::GetGatewayInstance().Request(methodName, p, result)};
+        return Result<void>{Firebolt::Transport::GetGatewayInstance().Request(methodName, p, result)};
     }
 
     Result<void> invoke(const std::string& methodName, const nlohmann::json& parameters) override
     {
         nlohmann::json result;
-        return Result<void>{FireboltSDK::Transport::GetGatewayInstance().Request(methodName, parameters, result)};
+        return Result<void>{Firebolt::Transport::GetGatewayInstance().Request(methodName, parameters, result)};
     }
 
     Result<void> unsubscribe(SubscriptionId id) override
@@ -83,7 +83,7 @@ public:
             return Result<void>{Error::General};
         }
         void *notificationPtr = reinterpret_cast<void *>(&it->second);
-        auto errorStatus{FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(it->second.eventName, notificationPtr)};
+        auto errorStatus{Firebolt::Transport::GetGatewayInstance().Unsubscribe(it->second.eventName, notificationPtr)};
         subscriptions_.erase(it);
         return Result<void>{errorStatus};
     }
@@ -96,7 +96,7 @@ public:
             if (it->second.owner == owner)
             {
                 void *notificationPtr = reinterpret_cast<void *>(&it->second);
-                FireboltSDK::Transport::GetGatewayInstance().Unsubscribe(it->second.eventName, notificationPtr);
+                Firebolt::Transport::GetGatewayInstance().Unsubscribe(it->second.eventName, notificationPtr);
                 it = subscriptions_.erase(it);
             }
             else
@@ -110,7 +110,7 @@ private:
     Result<nlohmann::json> getJson(const std::string &methodName, const nlohmann::json &parameters) override
     {
         nlohmann::json result;
-        Error status = FireboltSDK::Transport::GetGatewayInstance().Request(methodName, parameters, result);
+        Error status = Firebolt::Transport::GetGatewayInstance().Request(methodName, parameters, result);
         if (status != Error::None)
         {
             return Result<nlohmann::json>{status};
@@ -126,7 +126,7 @@ private:
         subscriptions_[newId] = SubscriptionData{owner, eventName, std::move(notification)};
         void *notificationPtr = reinterpret_cast<void *>(&subscriptions_[newId]);
 
-        Error status = FireboltSDK::Transport::GetGatewayInstance().Subscribe(eventName, callback, notificationPtr);
+        Error status = Firebolt::Transport::GetGatewayInstance().Subscribe(eventName, callback, notificationPtr);
 
         if (Error::None != status)
         {
