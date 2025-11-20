@@ -68,7 +68,6 @@ class Client
 
         MessageID id;
         Timestamp timestamp;
-        std::string response;
         nlohmann::json response_json;
         Firebolt::Error error = Firebolt::Error::None;
         bool ready = false;
@@ -136,7 +135,7 @@ public:
             }
             if (c->error == Firebolt::Error::None)
             {
-                response = nlohmann::json::parse(c->response);
+                response = c->response_json;
             }
             else
             {
@@ -171,7 +170,6 @@ public:
             std::unique_lock<std::mutex> lk(c->mtx);
             if (!message.contains("error"))
             {
-                c->response = to_string(message["result"]);
                 c->response_json = message["result"];
             }
             else
