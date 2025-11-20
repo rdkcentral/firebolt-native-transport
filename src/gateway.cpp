@@ -183,7 +183,7 @@ public:
         }
         catch (const std::out_of_range &e)
         {
-            std::cout << "No receiver for message-id: " << id << std::endl;
+            FIREBOLT_LOG_INFO("Gateway", "No receiver for a message, id: %u", id);
         }
     }
 
@@ -215,10 +215,10 @@ private:
             for (auto &c : outdated)
             {
                 std::unique_lock<std::mutex> lk(c->mtx);
-                std::cout << "Watchdog : message-id: " << c->id << " - timed out" << std::endl;
                 c->ready = true;
                 c->error = Firebolt::Error::Timedout;
                 c->waiter.notify_one();
+                FIREBOLT_LOG_WARNING("Gateway", "Watchdog: message timed out, id: %u", c->id);
             }
             outdated.clear();
             std::this_thread::sleep_for(watchdogTimer);
