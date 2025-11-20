@@ -1,3 +1,10 @@
+# [1.0.0-next.14](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.13...v1.0.0-next.14) (2025-11-20)
+
+
+### Features
+
+* Invoke doesn't wait for a response ([#24](https://github.com/rdkcentral/firebolt-native-transport/issues/24)) ([518235b](https://github.com/rdkcentral/firebolt-native-transport/commit/518235bd6a61c537020665725a9d560d0e2602b4))
+
 # [1.0.0-next.13](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.12...v1.0.0-next.13) (2025-11-19)
 
 
