@@ -16,6 +16,8 @@ while [[ ! -z $1 ]]; do
   esac; shift
 done
 
+set -u
+
 version="${version#v}"
 dist_name="$package-$version"
 dist_path="build/$dist_name"
@@ -30,6 +32,7 @@ else
   mv -T "$dist_path.tmp/$sub_path/" "$dist_path/"
 fi
 sed -i -e '/# <VERSION_BLOCK>/,/# <\/VERSION_BLOCK>/cset(PROJECT_VERSION \"'"$version"'\")' "$dist_path/CMakeLists.txt"
+rm $dist_path/package.json $dist_path/package-lock.json $dist_path/.releaserc.json
 tar -czf "build/$dist_name.tar.gz" -C "build" "$dist_name"
 echo "sha256sum  : $(sha256sum build/$dist_name.tar.gz)"
 

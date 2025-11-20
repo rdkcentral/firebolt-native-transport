@@ -30,6 +30,7 @@
 #include <mutex>
 #include <nlohmann/json.hpp>
 #include <optional>
+#include <set>
 #include <string>
 #include <thread>
 
@@ -67,7 +68,6 @@ class Client
 
         MessageID id;
         Timestamp timestamp;
-        std::string response;
         nlohmann::json response_json;
         Firebolt::Error error = Firebolt::Error::None;
         bool ready = false;
@@ -77,6 +77,8 @@ class Client
 
     std::map<MessageID, std::shared_ptr<Caller>> queue;
     mutable std::mutex queue_mtx;
+    std::set<MessageID> invokes;
+    mutable std::mutex invokes_mtx;
 
     std::atomic<bool> running{false};
     std::thread watchdogThread;
@@ -101,6 +103,16 @@ public:
         watchdogThread = std::thread(std::bind(&Client::watchdog, this));
     }
 
+    Firebolt::Error Send(const std::string &method, const nlohmann::json &parameters)
+    {
+        MessageID id = transport_.GetNextMessageID();
+        {
+            std::lock_guard lck(invokes_mtx);
+            invokes.insert(id);
+        }
+        return transport_.Send(method, parameters, id);
+    }
+
     Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response)
     {
         MessageID id = transport_.GetNextMessageID();
@@ -123,7 +135,7 @@ public:
             }
             if (c->error == Firebolt::Error::None)
             {
-                response = nlohmann::json::parse(c->response);
+                response = c->response_json;
             }
             else
             {
@@ -143,15 +155,21 @@ public:
     void Response(const nlohmann::json &message)
     {
         MessageID id = message["id"];
+        {
+            std::lock_guard lck(invokes_mtx);
+            if (invokes.find(id) != invokes.end())
+            {
+                invokes.erase(id);
+                return;
+            }
+        }
         try
         {
             std::lock_guard lck(queue_mtx);
             auto c = queue.at(id);
             std::unique_lock<std::mutex> lk(c->mtx);
-
             if (!message.contains("error"))
             {
-                c->response = to_string(message["result"]);
                 c->response_json = message["result"];
             }
             else
@@ -163,7 +181,7 @@ public:
         }
         catch (const std::out_of_range &e)
         {
-            std::cout << "No receiver for message-id: " << id << std::endl;
+            FIREBOLT_LOG_INFO("Gateway", "No receiver for a message, id: %u", id);
         }
     }
 
@@ -195,10 +213,10 @@ private:
             for (auto &c : outdated)
             {
                 std::unique_lock<std::mutex> lk(c->mtx);
-                std::cout << "Watchdog : message-id: " << c->id << " - timed out" << std::endl;
                 c->ready = true;
                 c->error = Firebolt::Error::Timedout;
                 c->waiter.notify_one();
+                FIREBOLT_LOG_WARNING("Gateway", "Watchdog: message timed out, id: %u", c->id);
             }
             outdated.clear();
             std::this_thread::sleep_for(watchdogTimer);
@@ -366,6 +384,11 @@ public:
     }
 
     virtual Firebolt::Error Disconnect() override { return transport.Disconnect(); }
+
+    Firebolt::Error Send(const std::string &method, const nlohmann::json &parameters) override
+    {
+        return client.Send(method, parameters);
+    }
 
     Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response) override
     {

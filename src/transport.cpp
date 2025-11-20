@@ -166,7 +166,10 @@ Firebolt::Error Transport::Send(const std::string &method, const nlohmann::json 
     msg["jsonrpc"] = "2.0";
     msg["id"] = id;
     msg["method"] = method;
-    msg["params"] = params;
+    if (!params.empty())
+    {
+        msg["params"] = params;
+    }
     if (debugEnabled_)
     {
         FIREBOLT_LOG_DEBUG("Transport", "Send: %s", msg.dump().c_str());

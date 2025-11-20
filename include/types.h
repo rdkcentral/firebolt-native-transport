@@ -34,11 +34,10 @@ enum class Error : int32_t
     Timedout = 2,
     NotConnected = 3,
     AlreadyConnected = 4,
-    // AuthenticationError, ?
     InvalidRequest = -32600,
     MethodNotFound = -32601,
     InvalidParams = -32602,
-    CapabilityNotAvaialbale = -50300,
+    CapabilityNotAvailable = -50300,
     CapabilityNotSupported = -50100,
     CapabilityGet = -50200,
     CapabilityNotPermitted = -40300,
