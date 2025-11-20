@@ -30,6 +30,7 @@
 #include <mutex>
 #include <nlohmann/json.hpp>
 #include <optional>
+#include <set>
 #include <string>
 #include <thread>
 
@@ -77,6 +78,8 @@ class Client
 
     std::map<MessageID, std::shared_ptr<Caller>> queue;
     mutable std::mutex queue_mtx;
+    std::set<MessageID> invokes;
+    mutable std::mutex invokes_mtx;
 
     std::atomic<bool> running{false};
     std::thread watchdogThread;
@@ -99,6 +102,16 @@ public:
     {
         running = true;
         watchdogThread = std::thread(std::bind(&Client::watchdog, this));
+    }
+
+    Firebolt::Error Send(const std::string &method, const nlohmann::json &parameters)
+    {
+        MessageID id = transport_.GetNextMessageID();
+        {
+            std::lock_guard lck(invokes_mtx);
+            invokes.insert(id);
+        }
+        return transport_.Send(method, parameters, id);
     }
 
     Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response)
@@ -143,12 +156,19 @@ public:
     void Response(const nlohmann::json &message)
     {
         MessageID id = message["id"];
+        {
+            std::lock_guard lck(invokes_mtx);
+            if (invokes.find(id) != invokes.end())
+            {
+                invokes.erase(id);
+                return;
+            }
+        }
         try
         {
             std::lock_guard lck(queue_mtx);
             auto c = queue.at(id);
             std::unique_lock<std::mutex> lk(c->mtx);
-
             if (!message.contains("error"))
             {
                 c->response = to_string(message["result"]);
@@ -366,6 +386,11 @@ public:
     }
 
     virtual Firebolt::Error Disconnect() override { return transport.Disconnect(); }
+
+    Firebolt::Error Send(const std::string &method, const nlohmann::json &parameters) override
+    {
+        return client.Send(method, parameters);
+    }
 
     Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response) override
     {

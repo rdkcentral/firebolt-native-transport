@@ -70,8 +70,7 @@ public:
 
     Result<void> invoke(const std::string& methodName, const nlohmann::json& parameters) override
     {
-        nlohmann::json result;
-        return Result<void>{Firebolt::Transport::GetGatewayInstance().Request(methodName, parameters, result)};
+        return Result<void>{Firebolt::Transport::GetGatewayInstance().Send(methodName, parameters)};
     }
 
     Result<void> unsubscribe(SubscriptionId id) override
