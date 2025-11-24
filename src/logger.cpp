@@ -53,7 +53,7 @@ std::map<Firebolt::LogLevel, int> _logLevel2SysLog = {
 };
 #endif
 
-void Logger::SetLogLevel(LogLevel logLevel)
+void Logger::setLogLevel(LogLevel logLevel)
 {
     if (logLevel < LogLevel::MaxLevel)
     {
@@ -61,7 +61,7 @@ void Logger::SetLogLevel(LogLevel logLevel)
     }
 }
 
-void Logger::SetFormat(bool addTs, bool addLocation, bool addFunction, bool addThreadId)
+void Logger::setFormat(bool addTs, bool addLocation, bool addFunction, bool addThreadId)
 {
     formatter_addTs = addTs;
     formatter_addLocation = addLocation;
@@ -69,7 +69,7 @@ void Logger::SetFormat(bool addTs, bool addLocation, bool addFunction, bool addT
     formatter_addThreadId = addThreadId;
 }
 
-void Logger::Log(LogLevel logLevel, const std::string &module, const std::string file, const std::string function,
+void Logger::log(LogLevel logLevel, const std::string &module, const std::string file, const std::string function,
                  const uint16_t line, const char* format, ...)
 {
     if (logLevel > _logLevel)

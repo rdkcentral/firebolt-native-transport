@@ -56,7 +56,7 @@ static Firebolt::Error mapError(websocketpp::lib::error_code error)
 
 Transport::~Transport()
 {
-    Disconnect();
+    disconnect();
 }
 
 void Transport::start()
@@ -71,7 +71,7 @@ void Transport::start()
     connectionStatus_ = TransportState::Disconnected;
 }
 
-Firebolt::Error Transport::Connect(std::string url, MessageCallback onMessage, ConnectionCallback onConnectionChange,
+Firebolt::Error Transport::connect(std::string url, MessageCallback onMessage, ConnectionCallback onConnectionChange,
                                    std::optional<unsigned> transportLoggingInclude,
                                    std::optional<unsigned> transportLoggingExclude)
 {
@@ -110,22 +110,22 @@ Firebolt::Error Transport::Connect(std::string url, MessageCallback onMessage, C
 
     connectionHandle_ = con->get_handle();
 
-    con->set_open_handler(websocketpp::lib::bind(&Transport::on_open, this, &client_, websocketpp::lib::placeholders::_1));
-    con->set_fail_handler(websocketpp::lib::bind(&Transport::on_fail, this, &client_, websocketpp::lib::placeholders::_1));
+    con->set_open_handler(websocketpp::lib::bind(&Transport::onOpen, this, &client_, websocketpp::lib::placeholders::_1));
+    con->set_fail_handler(websocketpp::lib::bind(&Transport::onFail, this, &client_, websocketpp::lib::placeholders::_1));
     con->set_close_handler(
-        websocketpp::lib::bind(&Transport::on_close, this, &client_, websocketpp::lib::placeholders::_1));
+        websocketpp::lib::bind(&Transport::onClose, this, &client_, websocketpp::lib::placeholders::_1));
 
-    con->set_message_handler(websocketpp::lib::bind(&Transport::on_message, this, websocketpp::lib::placeholders::_1,
+    con->set_message_handler(websocketpp::lib::bind(&Transport::onMessage, this, websocketpp::lib::placeholders::_1,
                                                     websocketpp::lib::placeholders::_2));
 
     client_.connect(con);
 
-    debugEnabled_ = Logger::IsLogLevelEnabled(Firebolt::LogLevel::Debug);
+    debugEnabled_ = Logger::isLogLevelEnabled(Firebolt::LogLevel::Debug);
 
     return Firebolt::Error::None;
 }
 
-Firebolt::Error Transport::Disconnect()
+Firebolt::Error Transport::disconnect()
 {
     if (connectionStatus_ == TransportState::NotStarted)
     {
@@ -150,12 +150,12 @@ Firebolt::Error Transport::Disconnect()
     return Firebolt::Error::None;
 }
 
-unsigned Transport::GetNextMessageID()
+unsigned Transport::getNextMessageID()
 {
     return ++id_counter_;
 }
 
-Firebolt::Error Transport::Send(const std::string &method, const nlohmann::json &params, const unsigned id)
+Firebolt::Error Transport::send(const std::string &method, const nlohmann::json &params, const unsigned id)
 {
     if (connectionStatus_ != TransportState::Connected)
     {
@@ -187,40 +187,15 @@ Firebolt::Error Transport::Send(const std::string &method, const nlohmann::json 
     return Firebolt::Error::None;
 }
 
-#ifdef ENABLE_MANAGE_API
-Firebolt::Error Transport::SendResponse(const unsigned id, const std::string &response)
-{
-    if (connectionStatus_ != TransportState::Connected)
-    {
-        return Firebolt::Error::NotConnected;
-    }
-
-    websocketpp::lib::error_code ec;
-
-    nlohmann::json msg;
-    msg["jsonrpc"] = "2.0";
-    msg["id"] = id;
-    msg["result"] = nlohmann::json::parse(response);
-    client_.send(connectionHandle_, to_string(msg), websocketpp::frame::opcode::text, ec);
-    if (ec)
-    {
-        FIREBOLT_LOG_ERROR("Transport", "Error sending response :%s", ec.message().c_str());
-        return mapError(ec);
-    }
-    return Firebolt::Error::None;
-}
-#endif
-
 void Transport::setLogging(websocketpp::log::level include, websocketpp::log::level exclude)
 {
     client_.set_access_channels(include);
     client_.clear_access_channels(exclude);
 }
 
-void Transport::on_message(websocketpp::connection_hdl hdl,
-                           websocketpp::client<websocketpp::config::asio_client>::message_ptr msg)
+void Transport::onMessage(websocketpp::connection_hdl /* hdl */,
+                          websocketpp::client<websocketpp::config::asio_client>::message_ptr msg)
 {
-    (void)hdl; //unused
     if (msg->get_opcode() != websocketpp::frame::opcode::text)
     {
         return;
@@ -240,7 +215,7 @@ void Transport::on_message(websocketpp::connection_hdl hdl,
     }
 }
 
-void Transport::on_open(websocketpp::client<websocketpp::config::asio_client> *c, websocketpp::connection_hdl hdl)
+void Transport::onOpen(websocketpp::client<websocketpp::config::asio_client> *c, websocketpp::connection_hdl hdl)
 {
     connectionStatus_ = TransportState::Connected;
 
@@ -248,14 +223,14 @@ void Transport::on_open(websocketpp::client<websocketpp::config::asio_client> *c
     connectionReceiver_(true, Firebolt::Error::None);
 }
 
-void Transport::on_close(websocketpp::client<websocketpp::config::asio_client> *c, websocketpp::connection_hdl hdl)
+void Transport::onClose(websocketpp::client<websocketpp::config::asio_client> *c, websocketpp::connection_hdl hdl)
 {
     connectionStatus_ = TransportState::Disconnected;
     client::connection_ptr con = c->get_con_from_hdl(hdl);
     connectionReceiver_(false, mapError(con->get_ec()));
 }
 
-void Transport::on_fail(websocketpp::client<websocketpp::config::asio_client> *c, websocketpp::connection_hdl hdl)
+void Transport::onFail(websocketpp::client<websocketpp::config::asio_client> *c, websocketpp::connection_hdl hdl)
 {
     connectionStatus_ = TransportState::Disconnected;
     client::connection_ptr con = c->get_con_from_hdl(hdl);

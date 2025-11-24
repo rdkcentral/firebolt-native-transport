@@ -31,30 +31,21 @@ namespace Firebolt::Transport
 {
 using EventCallback = std::function<void(void *usercb, const nlohmann::json &params)>;
 using ConnectionChangeCallback = std::function<void(const bool connected, const Firebolt::Error error)>;
-#ifdef ENABLE_MANAGE_API
-using ProviderCallback = std::function<std::string(void *usercb, const nlohmann::json &params)>;
-#endif
 
 class IGateway
 {
 public:
     virtual ~IGateway();
 
-    virtual Firebolt::Error Connect(const Firebolt::Config &config, ConnectionChangeCallback onConnectionChange) = 0;
-    virtual Firebolt::Error Disconnect() = 0;
+    virtual Firebolt::Error connect(const Firebolt::Config &config, ConnectionChangeCallback onConnectionChange) = 0;
+    virtual Firebolt::Error disconnect() = 0;
 
-    virtual Firebolt::Error Send(const std::string &method, const nlohmann::json &parameters) = 0;
-    virtual std::future<Firebolt::Result<nlohmann::json>> Request(const std::string &method,
+    virtual Firebolt::Error send(const std::string &method, const nlohmann::json &parameters) = 0;
+    virtual std::future<Firebolt::Result<nlohmann::json>> request(const std::string &method,
                                                                   const nlohmann::json &parameters) = 0;
-    virtual Firebolt::Error Subscribe(const std::string &event, EventCallback callback, void *usercb) = 0;
-    virtual Firebolt::Error Unsubscribe(const std::string &event, void *usercb) = 0;
+    virtual Firebolt::Error subscribe(const std::string &event, EventCallback callback, void *usercb) = 0;
+    virtual Firebolt::Error unsubscribe(const std::string &event, void *usercb) = 0;
 
-#ifdef ENABLE_MANAGE_API
-    virtual Firebolt::Error RegisterProviderInterface(const std::string &method, ProviderCallback callback,
-                                                      void *usercb) = 0;
-    virtual Firebolt::Error UnregisterProviderInterface(const std::string &interface, const std::string &method,
-                                                        void *usercb) = 0;
-#endif
 };
 
 FIREBOLTTRANSPORT_EXPORT IGateway &GetGatewayInstance();
