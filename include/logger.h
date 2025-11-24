@@ -22,7 +22,6 @@
 #include "firebolttransport_export.h"
 #include <stdint.h>
 #include <string>
-#include <typeinfo>
 
 namespace Firebolt
 {
@@ -38,12 +37,12 @@ public:
     ~Logger() = default;
 
 public:
-    static void SetLogLevel(LogLevel logLevel);
-    static void SetFormat(bool addTs, bool addLocation, bool addFunction, bool addThreadId);
-    static void Log(LogLevel logLevel, const std::string &module, const std::string file, const std::string function,
+    static void setLogLevel(LogLevel logLevel);
+    static void setFormat(bool addTs, bool addLocation, bool addFunction, bool addThreadId);
+    static void log(LogLevel logLevel, const std::string &module, const std::string file, const std::string function,
                     const uint16_t line, const char *format, ...) __attribute__((format(printf, 6, 7)));
 
-    static bool IsLogLevelEnabled(LogLevel logLevel)
+    static bool isLogLevelEnabled(LogLevel logLevel)
     {
         return logLevel <= _logLevel;
     }
@@ -57,7 +56,7 @@ private:
 };
 }
 
-#define FIREBOLT_LOG(level, module, ...)   do { Firebolt::Logger::Log(level, module, __FILE__, __func__, __LINE__, __VA_ARGS__); } while (0)
+#define FIREBOLT_LOG(level, module, ...)   do { Firebolt::Logger::log(level, module, __FILE__, __func__, __LINE__, __VA_ARGS__); } while (0)
 #define FIREBOLT_LOG_ERROR(module, ...)    do { FIREBOLT_LOG(Firebolt::LogLevel::Error, module, __VA_ARGS__); } while (0)
 #define FIREBOLT_LOG_WARNING(module, ...)  do { FIREBOLT_LOG(Firebolt::LogLevel::Warning, module, __VA_ARGS__); } while (0)
 #define FIREBOLT_LOG_INFO(module, ...)     do { FIREBOLT_LOG(Firebolt::LogLevel::Info, module, __VA_ARGS__); } while (0)

@@ -37,7 +37,7 @@ struct ICaseComparator
 };
 
 template <typename T> using EnumType = std::map<std::string, T, ICaseComparator>;
-template <typename T> inline std::string ToString(const EnumType<T> &enumType, const T &value)
+template <typename T> inline std::string toString(const EnumType<T> &enumType, const T &value)
 {
     auto it = std::find_if(enumType.begin(), enumType.end(), [&value](const auto &pair) { return pair.second == value; });
     if (it != enumType.end())
@@ -50,15 +50,15 @@ template <typename T> inline std::string ToString(const EnumType<T> &enumType, c
 template <typename T> class NL_Json_Basic
 {
 public:
-    virtual void FromJson(const nlohmann::json &json) = 0;
-    T virtual Value() const = 0;
+    virtual void fromJson(const nlohmann::json &json) = 0;
+    T virtual value() const = 0;
 };
 
 template <typename T> class BasicType : public NL_Json_Basic<T>
 {
 public:
-    void FromJson(const nlohmann::json &json) override { value_ = json.get<T>(); }
-    T Value() const override { return value_; }
+    void fromJson(const nlohmann::json &json) override { value_ = json.get<T>(); }
+    T value() const override { return value_; }
 
 private:
     T value_;
@@ -73,17 +73,17 @@ using Integer = BasicType<int32_t>;
 template <typename T1, typename T2> class NL_Json_Array : public NL_Json_Basic<std::vector<T2>>
 {
 public:
-    void FromJson(const nlohmann::json &json) override
+    void fromJson(const nlohmann::json &json) override
     {
         value_.clear();
         for (const auto &item : json)
         {
             T1 element;
-            element.FromJson(item);
-            value_.push_back(element.Value());
+            element.fromJson(item);
+            value_.push_back(element.value());
         }
     }
-    std::vector<T2> Value() const override { return value_; }
+    std::vector<T2> value() const override { return value_; }
 
 private:
     std::vector<T2> value_;

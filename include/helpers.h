@@ -20,18 +20,12 @@
 #pragma once
 
 #include "firebolttransport_export.h"
-#include "gateway.h"
 #include "logger.h"
-#include "json_types.h"
 #include "types.h"
 #include <any>
-#include <map>
-#include <mutex>
 #include <nlohmann/json.hpp>
-#include <optional>
 #include <string>
 #include <tuple>
-#include <type_traits>
 
 namespace Firebolt::Helpers
 {
@@ -51,14 +45,14 @@ void onPropertyChangedCallback(void *subscriptionDataPtr, const nlohmann::json &
     JsonType jsonType;
     try
     {
-        jsonType.FromJson(jsonResponse);
+        jsonType.fromJson(jsonResponse);
         if constexpr (sizeof...(Args) > 1)
         {
-            std::apply(notifier, jsonType.Value());
+            std::apply(notifier, jsonType.value());
         }
         else
         {
-            notifier(jsonType.Value());
+            notifier(jsonType.value());
         }
     }
     catch (const std::exception &e)
@@ -86,8 +80,8 @@ public:
         try
         {
             JsonType jsonResult;
-            jsonResult.FromJson(*result);
-            return Result<PropertyType>{jsonResult.Value()};
+            jsonResult.fromJson(*result);
+            return Result<PropertyType>{jsonResult.value()};
         }
         catch (const std::exception &e)
         {
