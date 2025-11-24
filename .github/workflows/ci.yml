@@ -55,9 +55,23 @@ jobs:
         if: steps.cache-restore.outputs.cache-hit != 'true'
         run: echo "New dependency cache will be saved."
 
+  format_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+
+      - name: Run clang-format check
+        run: |
+          git ls-files -- '*.cpp' '*.h' | xargs clang-format --dry-run --Werror
+
   build_project:
     needs: setup_deps
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -104,4 +118,3 @@ jobs:
         with:
           name: release
           path: ${{ github.workspace }}/release
-

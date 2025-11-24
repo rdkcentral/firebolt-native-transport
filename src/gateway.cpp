@@ -22,8 +22,8 @@
 #include "transport.h"
 #include "types.h"
 #include <assert.h>
-#include <future>
 #include <chrono>
+#include <future>
 #include <list>
 #include <map>
 #include <mutex>
@@ -48,14 +48,17 @@ class IClientTransport
 public:
     virtual ~IClientTransport() = default;
     virtual MessageID getNextMessageID() = 0;
-    virtual Firebolt::Error send(const std::string &method, const nlohmann::json &parameters, MessageID id) = 0;
+    virtual Firebolt::Error send(const std::string& method, const nlohmann::json& parameters, MessageID id) = 0;
 };
 
 class Client
 {
     struct Caller
     {
-        Caller(MessageID id_) : id(id_) {}
+        Caller(MessageID id_)
+            : id(id_)
+        {
+        }
         const MessageID id;
         std::promise<Result<nlohmann::json>> promise;
     };
@@ -65,12 +68,15 @@ class Client
     std::set<MessageID> invokes;
     mutable std::mutex invokes_mtx;
 
-    IClientTransport &transport_;
+    IClientTransport& transport_;
 
 public:
-    Client(IClientTransport &transport) : transport_(transport) {}
+    Client(IClientTransport& transport)
+        : transport_(transport)
+    {
+    }
 
-    Firebolt::Error send(const std::string &method, const nlohmann::json &parameters)
+    Firebolt::Error send(const std::string& method, const nlohmann::json& parameters)
     {
         MessageID id = transport_.getNextMessageID();
         {
@@ -80,7 +86,7 @@ public:
         return transport_.send(method, parameters, id);
     }
 
-    std::future<Result<nlohmann::json>> request(const std::string &method, const nlohmann::json &parameters)
+    std::future<Result<nlohmann::json>> request(const std::string& method, const nlohmann::json& parameters)
     {
         MessageID id = transport_.getNextMessageID();
         std::shared_ptr<Caller> c = std::make_shared<Caller>(id);
@@ -102,7 +108,7 @@ public:
         return future;
     }
 
-    void response(const nlohmann::json &message)
+    void response(const nlohmann::json& message)
     {
         MessageID id = message["id"];
         {
@@ -129,12 +135,11 @@ public:
                 c->promise.set_value(Result<nlohmann::json>{static_cast<Firebolt::Error>(message["error"]["code"])});
             }
         }
-        catch (const std::out_of_range &e)
+        catch (const std::out_of_range& e)
         {
             FIREBOLT_LOG_INFO("Gateway", "No receiver for a message, id: %u", id);
         }
     }
-
 };
 
 class Server
@@ -143,7 +148,7 @@ class Server
     {
         std::string eventName;
         const EventCallback lambda;
-        void *usercb;
+        void* usercb;
     };
 
     using EventList = std::list<CallbackDataEvent>;
@@ -152,7 +157,6 @@ class Server
     mutable std::mutex eventMap_mtx;
 
 public:
-
     virtual ~Server()
     {
         {
@@ -161,12 +165,12 @@ public:
         }
     }
 
-    Firebolt::Error subscribe(const std::string &event, EventCallback callback, void *usercb)
+    Firebolt::Error subscribe(const std::string& event, EventCallback callback, void* usercb)
     {
         CallbackDataEvent callbackData = {event, callback, usercb};
 
         std::lock_guard lck(eventMap_mtx);
-        auto eventIt = std::find_if(eventList.begin(), eventList.end(), [&event, usercb](const CallbackDataEvent &e)
+        auto eventIt = std::find_if(eventList.begin(), eventList.end(), [&event, usercb](const CallbackDataEvent& e)
                                     { return e.eventName == event && e.usercb == usercb; });
 
         if (eventIt != eventList.end())
@@ -178,11 +182,11 @@ public:
         return Firebolt::Error::None;
     }
 
-    Firebolt::Error unsubscribe(const std::string &event, void *usercb)
+    Firebolt::Error unsubscribe(const std::string& event, void* usercb)
     {
         std::lock_guard lck(eventMap_mtx);
 
-        auto it = std::find_if(eventList.begin(), eventList.end(), [&event, usercb](const CallbackDataEvent &e)
+        auto it = std::find_if(eventList.begin(), eventList.end(), [&event, usercb](const CallbackDataEvent& e)
                                { return e.eventName == event && e.usercb == usercb; });
 
         if (it == eventList.end())
@@ -194,13 +198,16 @@ public:
         return Firebolt::Error::None;
     }
 
-    void notify(const std::string &method, const nlohmann::json &parameters)
+    void notify(const std::string& method, const nlohmann::json& parameters)
     {
         std::string key = method;
         nlohmann::json params;
-        if (parameters.contains("value") && parameters.size() == 1) {
+        if (parameters.contains("value") && parameters.size() == 1)
+        {
             params = parameters["value"];
-        } else {
+        }
+        else
+        {
             params = parameters;
         }
 
@@ -214,13 +221,14 @@ public:
         }
     }
 
-    bool isAnySubscriber(const std::string &method)
+    bool isAnySubscriber(const std::string& method)
     {
         std::string key = method;
         size_t dotPos = key.find('.');
-        if (dotPos != std::string::npos) {
+        if (dotPos != std::string::npos)
+        {
             std::transform(key.begin(), key.begin() + dotPos, key.begin(),
-                   [](unsigned char c) { return std::tolower(c); });
+                           [](unsigned char c) { return std::tolower(c); });
         }
         std::lock_guard lck(eventMap_mtx);
 
@@ -235,8 +243,7 @@ public:
     }
 };
 
-class GatewayImpl : public IGateway,
-                    private IClientTransport
+class GatewayImpl : public IGateway, private IClientTransport
 {
 private:
     ConnectionChangeCallback connectionChangeListener;
@@ -245,17 +252,21 @@ private:
     Server server;
 
 public:
-    GatewayImpl() : client(*this), server() {}
+    GatewayImpl()
+        : client(*this),
+          server()
+    {
+    }
 
     ~GatewayImpl() = default;
 
-    virtual Firebolt::Error connect(const Firebolt::Config &cfg, ConnectionChangeCallback onConnectionChange) override
+    virtual Firebolt::Error connect(const Firebolt::Config& cfg, ConnectionChangeCallback onConnectionChange) override
     {
         assert(onConnectionChange != nullptr);
 
         Firebolt::Logger::setLogLevel(cfg.log.level);
         Firebolt::Logger::setFormat(cfg.log.format.ts, cfg.log.format.location, cfg.log.format.function,
-                                       cfg.log.format.thread);
+                                    cfg.log.format.thread);
 
         connectionChangeListener = onConnectionChange;
 
@@ -276,7 +287,7 @@ public:
 
         FIREBOLT_LOG_INFO("Gateway", "Connecting to url = %s", url.c_str());
         Firebolt::Error status = transport.connect(
-            url, [this](const nlohmann::json &message) { this->onMessage(message); },
+            url, [this](const nlohmann::json& message) { this->onMessage(message); },
             [this](const bool connected, Firebolt::Error error) { this->onConnectionChange(connected, error); },
             transportLoggingInclude, transportLoggingExclude);
 
@@ -290,12 +301,12 @@ public:
 
     virtual Firebolt::Error disconnect() override { return transport.disconnect(); }
 
-    Firebolt::Error send(const std::string &method, const nlohmann::json &parameters) override
+    Firebolt::Error send(const std::string& method, const nlohmann::json& parameters) override
     {
         return client.send(method, parameters);
     }
 
-    std::future<Result<nlohmann::json>> request(const std::string &method, const nlohmann::json &parameters) override
+    std::future<Result<nlohmann::json>> request(const std::string& method, const nlohmann::json& parameters) override
     {
         auto future = client.request(method, parameters);
 
@@ -309,7 +320,7 @@ public:
         return future;
     }
 
-    Firebolt::Error subscribe(const std::string &event, EventCallback callback, void *usercb) override
+    Firebolt::Error subscribe(const std::string& event, EventCallback callback, void* usercb) override
     {
         bool alreadySubscribed = server.isAnySubscriber(event);
         Firebolt::Error status = server.subscribe(event, callback, usercb);
@@ -340,7 +351,7 @@ public:
         return status;
     }
 
-    Firebolt::Error unsubscribe(const std::string &event, void *usercb) override
+    Firebolt::Error unsubscribe(const std::string& event, void* usercb) override
     {
         Firebolt::Error status = server.unsubscribe(event, usercb);
         if (status != Firebolt::Error::None)
@@ -367,7 +378,7 @@ public:
     }
 
 private:
-    void onMessage(const nlohmann::json &message)
+    void onMessage(const nlohmann::json& message)
     {
         if (message.contains("id") && (message.contains("result") || message.contains("error")))
         {
@@ -382,7 +393,8 @@ private:
             }
             else
             {
-                if (message.contains("params") == false) {
+                if (message.contains("params") == false)
+                {
                     FIREBOLT_LOG_ERROR("Gateway", "Invalid notification-payload received: %s", message.dump().c_str());
                     return;
                 }
@@ -397,13 +409,13 @@ private:
 
     MessageID getNextMessageID() override { return transport.getNextMessageID(); }
 
-    Firebolt::Error send(const std::string &method, const nlohmann::json &parameters, MessageID id) override
+    Firebolt::Error send(const std::string& method, const nlohmann::json& parameters, MessageID id) override
     {
         return transport.send(method, parameters, id);
     }
 };
 
-IGateway &GetGatewayInstance()
+IGateway& GetGatewayInstance()
 {
     static GatewayImpl instance;
     return instance;

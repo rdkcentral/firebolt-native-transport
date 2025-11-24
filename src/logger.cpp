@@ -37,7 +37,7 @@ namespace Firebolt
 /* static */ bool Logger::formatter_addLocation = false;
 /* static */ bool Logger::formatter_addFunction = true;
 
-std::map<Firebolt::LogLevel, const char *> _logLevelNames = {
+std::map<Firebolt::LogLevel, const char*> _logLevelNames = {
     {LogLevel::Error, "Error"},
     {LogLevel::Warning, "Warning"},
     {LogLevel::Info, "Info"},
@@ -69,7 +69,7 @@ void Logger::setFormat(bool addTs, bool addLocation, bool addFunction, bool addT
     formatter_addThreadId = addThreadId;
 }
 
-void Logger::log(LogLevel logLevel, const std::string &module, const std::string file, const std::string function,
+void Logger::log(LogLevel logLevel, const std::string& module, const std::string file, const std::string function,
                  const uint16_t line, const char* format, ...)
 {
     if (logLevel > _logLevel)

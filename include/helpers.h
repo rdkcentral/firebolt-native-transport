@@ -32,15 +32,15 @@ namespace Firebolt::Helpers
 
 struct SubscriptionData
 {
-    void *owner;
+    void* owner;
     std::string eventName;
     std::any notification;
 };
 
 template <typename JsonType, typename... Args>
-void onPropertyChangedCallback(void *subscriptionDataPtr, const nlohmann::json &jsonResponse)
+void onPropertyChangedCallback(void* subscriptionDataPtr, const nlohmann::json& jsonResponse)
 {
-    SubscriptionData *subscriptionData = reinterpret_cast<SubscriptionData *>(subscriptionDataPtr);
+    SubscriptionData* subscriptionData = reinterpret_cast<SubscriptionData*>(subscriptionDataPtr);
     auto notifier = std::any_cast<std::function<void(Args...)>>(subscriptionData->notification);
     JsonType jsonType;
     try
@@ -55,7 +55,7 @@ void onPropertyChangedCallback(void *subscriptionDataPtr, const nlohmann::json &
             notifier(jsonType.value());
         }
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
         FIREBOLT_LOG_ERROR("Event", "Cannot parse event data for event %s, payload: %s",
                            subscriptionData->eventName.c_str(), jsonResponse.dump().c_str());
@@ -67,10 +67,10 @@ class IHelper
 public:
     virtual ~IHelper() = default;
 
-    virtual Result<void> set(const std::string &methodName, const nlohmann::json &parameters) = 0;
-    virtual Result<void> invoke(const std::string &methodName, const nlohmann::json &parameters) = 0;
+    virtual Result<void> set(const std::string& methodName, const nlohmann::json& parameters) = 0;
+    virtual Result<void> invoke(const std::string& methodName, const nlohmann::json& parameters) = 0;
     template <typename JsonType, typename PropertyType>
-    Result<PropertyType> get(const std::string &methodName, const nlohmann::json &parameters = nlohmann::json({}))
+    Result<PropertyType> get(const std::string& methodName, const nlohmann::json& parameters = nlohmann::json({}))
     {
         Result<nlohmann::json> result = getJson(methodName, parameters);
         if (!result)
@@ -83,7 +83,7 @@ public:
             jsonResult.fromJson(*result);
             return Result<PropertyType>{jsonResult.value()};
         }
-        catch (const std::exception &e)
+        catch (const std::exception& e)
         {
             FIREBOLT_LOG_ERROR("Getter", "Cannot parse data for a getter %s, payload: %s", methodName.c_str(),
                                result->dump().c_str());
@@ -91,26 +91,26 @@ public:
         }
     }
 
-    virtual Result<SubscriptionId> subscribe(void *owner, const std::string &eventName, std::any &&notification,
-                                             void (*callback)(void *, const nlohmann::json &)) = 0;
+    virtual Result<SubscriptionId> subscribe(void* owner, const std::string& eventName, std::any&& notification,
+                                             void (*callback)(void*, const nlohmann::json&)) = 0;
     virtual Result<void> unsubscribe(SubscriptionId id) = 0;
-    virtual void unsubscribeAll(void *owner) = 0;
+    virtual void unsubscribeAll(void* owner) = 0;
 
 private:
-    virtual Result<nlohmann::json> getJson(const std::string &methodName, const nlohmann::json &parameters) = 0;
+    virtual Result<nlohmann::json> getJson(const std::string& methodName, const nlohmann::json& parameters) = 0;
 };
 
 class FIREBOLTTRANSPORT_EXPORT SubscriptionManager
 {
 public:
-    SubscriptionManager(IHelper &helper, void *owner);
+    SubscriptionManager(IHelper& helper, void* owner);
     ~SubscriptionManager();
 
-    SubscriptionManager(const SubscriptionManager &) = delete;
-    SubscriptionManager& operator=(const SubscriptionManager &) = delete;
+    SubscriptionManager(const SubscriptionManager&) = delete;
+    SubscriptionManager& operator=(const SubscriptionManager&) = delete;
 
     template <typename JsonType, typename... Args>
-    Result<SubscriptionId> subscribe(const std::string &eventName, std::function<void(Args...)> &&notification)
+    Result<SubscriptionId> subscribe(const std::string& eventName, std::function<void(Args...)>&& notification)
     {
         return helper_.subscribe(owner_, eventName, std::move(notification),
                                  onPropertyChangedCallback<JsonType, Args...>);
@@ -120,8 +120,8 @@ public:
     void unsubscribeAll();
 
 private:
-    IHelper &helper_;
-    void *owner_;
+    IHelper& helper_;
+    void* owner_;
 };
 
 FIREBOLTTRANSPORT_EXPORT IHelper& GetHelperInstance();
