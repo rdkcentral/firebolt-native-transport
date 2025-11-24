@@ -23,8 +23,8 @@
 #include "types.h"
 #include "json_types.h"
 #include <assert.h>
+#include <future>
 #include <chrono>
-#include <condition_variable>
 #include <list>
 #include <map>
 #include <mutex>
@@ -64,15 +64,9 @@ class Client
 {
     struct Caller
     {
-        Caller(MessageID id_) : id(id_), timestamp(std::chrono::steady_clock::now()) {}
-
-        MessageID id;
-        Timestamp timestamp;
-        nlohmann::json response_json;
-        Firebolt::Error error = Firebolt::Error::None;
-        bool ready = false;
-        std::mutex mtx;
-        std::condition_variable waiter;
+        Caller(MessageID id_) : id(id_) {}
+        const MessageID id;
+        std::promise<Result<nlohmann::json>> promise;
     };
 
     std::map<MessageID, std::shared_ptr<Caller>> queue;
@@ -80,28 +74,10 @@ class Client
     std::set<MessageID> invokes;
     mutable std::mutex invokes_mtx;
 
-    std::atomic<bool> running{false};
-    std::thread watchdogThread;
-
     IClientTransport &transport_;
 
 public:
     Client(IClientTransport &transport) : transport_(transport) {}
-
-    virtual ~Client()
-    {
-        running = false;
-        if (watchdogThread.joinable())
-        {
-            watchdogThread.join();
-        }
-    }
-
-    void Start()
-    {
-        running = true;
-        watchdogThread = std::thread(std::bind(&Client::watchdog, this));
-    }
 
     Firebolt::Error Send(const std::string &method, const nlohmann::json &parameters)
     {
@@ -113,37 +89,26 @@ public:
         return transport_.Send(method, parameters, id);
     }
 
-    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response)
+    std::future<Result<nlohmann::json>> Request(const std::string &method, const nlohmann::json &parameters)
     {
         MessageID id = transport_.GetNextMessageID();
         std::shared_ptr<Caller> c = std::make_shared<Caller>(id);
+        auto future = c->promise.get_future();
+
         {
             std::lock_guard lck(queue_mtx);
             queue[id] = c;
         }
 
         Firebolt::Error result = transport_.Send(method, parameters, id);
-        if (result == Firebolt::Error::None)
+        if (result != Firebolt::Error::None)
         {
-            {
-                std::unique_lock<std::mutex> lk(c->mtx);
-                c->waiter.wait(lk, [&] { return c->ready; });
-                {
-                    std::lock_guard lck(queue_mtx);
-                    queue.erase(c->id);
-                }
-            }
-            if (c->error == Firebolt::Error::None)
-            {
-                response = c->response_json;
-            }
-            else
-            {
-                result = c->error;
-            }
+            c->promise.set_value(Result<nlohmann::json>{result});
+            std::lock_guard lck(queue_mtx);
+            queue.erase(id);
         }
 
-        return result;
+        return future;
     }
 
     bool IdRequested(MessageID id)
@@ -165,19 +130,19 @@ public:
         }
         try
         {
+            std::shared_ptr<Caller> c;
             std::lock_guard lck(queue_mtx);
-            auto c = queue.at(id);
-            std::unique_lock<std::mutex> lk(c->mtx);
+            c = queue.at(id);
+            queue.erase(id);
+
             if (!message.contains("error"))
             {
-                c->response_json = message["result"];
+                c->promise.set_value(Result<nlohmann::json>{message["result"]});
             }
             else
             {
-                c->error = static_cast<Firebolt::Error>(message["error"]["code"]);
+                c->promise.set_value(Result<nlohmann::json>{static_cast<Firebolt::Error>(message["error"]["code"])});
             }
-            c->ready = true;
-            c->waiter.notify_one();
         }
         catch (const std::out_of_range &e)
         {
@@ -185,43 +150,6 @@ public:
         }
     }
 
-private:
-    void watchdog()
-    {
-        auto watchdogTimer = std::chrono::milliseconds(runtime_watchdogCycle_ms);
-        std::vector<std::shared_ptr<Caller>> outdated;
-
-        while (running)
-        {
-            Timestamp now = std::chrono::steady_clock::now();
-            {
-                std::lock_guard lck(queue_mtx);
-                for (auto it = queue.begin(); it != queue.end();)
-                {
-                    if (std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second->timestamp).count() >
-                        runtime_waitTime_ms)
-                    {
-                        outdated.push_back(it->second);
-                        it = queue.erase(it);
-                    }
-                    else
-                    {
-                        ++it;
-                    }
-                }
-            }
-            for (auto &c : outdated)
-            {
-                std::unique_lock<std::mutex> lk(c->mtx);
-                c->ready = true;
-                c->error = Firebolt::Error::Timedout;
-                c->waiter.notify_one();
-                FIREBOLT_LOG_WARNING("Gateway", "Watchdog: message timed out, id: %u", c->id);
-            }
-            outdated.clear();
-            std::this_thread::sleep_for(watchdogTimer);
-        }
-    }
 };
 
 class Server
@@ -250,8 +178,6 @@ public:
             eventList.clear();
         }
     }
-
-    void Start() {}
 
     Firebolt::Error Subscribe(const std::string &event, EventCallback callback, void *usercb)
     {
@@ -378,8 +304,6 @@ public:
             return status;
         }
 
-        client.Start();
-        server.Start();
         return status;
     }
 
@@ -390,9 +314,18 @@ public:
         return client.Send(method, parameters);
     }
 
-    Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters, nlohmann::json &response) override
+    std::future<Result<nlohmann::json>> Request(const std::string &method, const nlohmann::json &parameters) override
     {
-        return client.Request(method, parameters, response);
+        auto future = client.Request(method, parameters);
+
+        if (future.wait_for(std::chrono::milliseconds(runtime_waitTime_ms)) == std::future_status::timeout)
+        {
+            FIREBOLT_LOG_WARNING("Gateway", "Request timed out, method: %s", method.c_str());
+            std::promise<Result<nlohmann::json>> p;
+            p.set_value(Result<nlohmann::json>{Error::Timedout});
+            return p.get_future();
+        }
+        return future;
     }
 
     Firebolt::Error Subscribe(const std::string &event, EventCallback callback, void *usercb) override
@@ -411,8 +344,14 @@ public:
 
         nlohmann::json params;
         params["listen"] = true;
-        nlohmann::json result;
-        status = client.Request(event, params, result);
+        auto future = Request(event, params);
+        auto result = future.get();
+
+        if (!result)
+        {
+            status = result.error();
+        }
+
         if (status != Firebolt::Error::None)
         {
             server.Unsubscribe(event, usercb);
@@ -435,8 +374,14 @@ public:
 
         nlohmann::json params;
         params["listen"] = false;
-        nlohmann::json result;
-        status = client.Request(event, params, result);
+        auto future = Request(event, params);
+        auto result = future.get();
+
+        if (!result)
+        {
+            status = result.error();
+        }
+
         return status;
     }
 

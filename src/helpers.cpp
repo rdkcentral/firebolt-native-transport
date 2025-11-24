@@ -65,7 +65,14 @@ public:
         {
             p["value"] = parameters;
         }
-        return Result<void>{Firebolt::Transport::GetGatewayInstance().Request(methodName, p, result)};
+        auto future = Firebolt::Transport::GetGatewayInstance().Request(methodName, p);
+        auto requestResult = future.get();
+
+        if (!requestResult)
+        {
+            return Result<void>{requestResult.error()};
+        }
+        return Result<void>{Error::None};
     }
 
     Result<void> invoke(const std::string& methodName, const nlohmann::json& parameters) override
@@ -108,13 +115,14 @@ public:
 private:
     Result<nlohmann::json> getJson(const std::string &methodName, const nlohmann::json &parameters) override
     {
-        nlohmann::json result;
-        Error status = Firebolt::Transport::GetGatewayInstance().Request(methodName, parameters, result);
-        if (status != Error::None)
+        auto future = Firebolt::Transport::GetGatewayInstance().Request(methodName, parameters);
+        auto result = future.get();
+
+        if (!result)
         {
-            return Result<nlohmann::json>{status};
+            return Result<nlohmann::json>{result.error()};
         }
-        return Result<nlohmann::json>{result};
+        return Result<nlohmann::json>{*result};
     }
 
     Result<SubscriptionId> subscribe(void *owner, const std::string &eventName, std::any &&notification,
