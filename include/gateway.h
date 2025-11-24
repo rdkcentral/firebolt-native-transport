@@ -23,8 +23,8 @@
 #include "config.h"
 #include "types.h"
 #include <functional>
+#include <future>
 #include <nlohmann/json.hpp>
-#include <optional>
 #include <string>
 
 namespace Firebolt::Transport
@@ -44,8 +44,8 @@ public:
     virtual Firebolt::Error Disconnect() = 0;
 
     virtual Firebolt::Error Send(const std::string &method, const nlohmann::json &parameters) = 0;
-    virtual Firebolt::Error Request(const std::string &method, const nlohmann::json &parameters,
-                                    nlohmann::json &response) = 0;
+    virtual std::future<Firebolt::Result<nlohmann::json>> Request(const std::string &method,
+                                                                  const nlohmann::json &parameters) = 0;
     virtual Firebolt::Error Subscribe(const std::string &event, EventCallback callback, void *usercb) = 0;
     virtual Firebolt::Error Unsubscribe(const std::string &event, void *usercb) = 0;
 
