@@ -1,3 +1,13 @@
+# [1.0.0-next.15](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.14...v1.0.0-next.15) (2025-11-24)
+
+
+### Features
+
+* Enable Wall globally, remove warnings ([ae8412f](https://github.com/rdkcentral/firebolt-native-transport/commit/ae8412fa95214235e900f01df023bc6e05a585a5))
+* Rename functions to start with lower-case ([a7ce8fb](https://github.com/rdkcentral/firebolt-native-transport/commit/a7ce8fb4562da215d391cbd197631d30bf265341))
+* Update clang formatter, format code, add a checker in ci ([86b06da](https://github.com/rdkcentral/firebolt-native-transport/commit/86b06da8221835653d2d7562fc65fb12a4842b3b))
+* Use promise & future ([474956e](https://github.com/rdkcentral/firebolt-native-transport/commit/474956e3e62f00c5415d24499ee616e24fb56b8a))
+
 # [1.0.0-next.14](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.13...v1.0.0-next.14) (2025-11-20)
 
 
