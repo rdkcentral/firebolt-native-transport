@@ -9,7 +9,7 @@ on:
 
 env:
   SYSROOT_PATH: ${{ github.workspace }}/deps_install
-  DEPS_FILE: .deps
+  DEPS_FILE: ${{ github.workspace }}/.github/deps
 
 jobs:
   setup_deps:
