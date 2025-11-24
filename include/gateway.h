@@ -19,8 +19,8 @@
 
 #pragma once
 
-#include "firebolttransport_export.h"
 #include "config.h"
+#include "firebolttransport_export.h"
 #include "types.h"
 #include <functional>
 #include <future>
@@ -29,7 +29,7 @@
 
 namespace Firebolt::Transport
 {
-using EventCallback = std::function<void(void *usercb, const nlohmann::json &params)>;
+using EventCallback = std::function<void(void* usercb, const nlohmann::json& params)>;
 using ConnectionChangeCallback = std::function<void(const bool connected, const Firebolt::Error error)>;
 
 class IGateway
@@ -37,16 +37,15 @@ class IGateway
 public:
     virtual ~IGateway();
 
-    virtual Firebolt::Error connect(const Firebolt::Config &config, ConnectionChangeCallback onConnectionChange) = 0;
+    virtual Firebolt::Error connect(const Firebolt::Config& config, ConnectionChangeCallback onConnectionChange) = 0;
     virtual Firebolt::Error disconnect() = 0;
 
-    virtual Firebolt::Error send(const std::string &method, const nlohmann::json &parameters) = 0;
-    virtual std::future<Firebolt::Result<nlohmann::json>> request(const std::string &method,
-                                                                  const nlohmann::json &parameters) = 0;
-    virtual Firebolt::Error subscribe(const std::string &event, EventCallback callback, void *usercb) = 0;
-    virtual Firebolt::Error unsubscribe(const std::string &event, void *usercb) = 0;
-
+    virtual Firebolt::Error send(const std::string& method, const nlohmann::json& parameters) = 0;
+    virtual std::future<Firebolt::Result<nlohmann::json>> request(const std::string& method,
+                                                                  const nlohmann::json& parameters) = 0;
+    virtual Firebolt::Error subscribe(const std::string& event, EventCallback callback, void* usercb) = 0;
+    virtual Firebolt::Error unsubscribe(const std::string& event, void* usercb) = 0;
 };
 
-FIREBOLTTRANSPORT_EXPORT IGateway &GetGatewayInstance();
+FIREBOLTTRANSPORT_EXPORT IGateway& GetGatewayInstance();
 } // namespace Firebolt::Transport

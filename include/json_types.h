@@ -30,16 +30,16 @@ namespace Firebolt::JSON
 
 struct ICaseComparator
 {
-    bool operator()(const std::string &a, const std::string &b) const noexcept
+    bool operator()(const std::string& a, const std::string& b) const noexcept
     {
         return ::strcasecmp(a.c_str(), b.c_str()) < 0;
     }
 };
 
 template <typename T> using EnumType = std::map<std::string, T, ICaseComparator>;
-template <typename T> inline std::string toString(const EnumType<T> &enumType, const T &value)
+template <typename T> inline std::string toString(const EnumType<T>& enumType, const T& value)
 {
-    auto it = std::find_if(enumType.begin(), enumType.end(), [&value](const auto &pair) { return pair.second == value; });
+    auto it = std::find_if(enumType.begin(), enumType.end(), [&value](const auto& pair) { return pair.second == value; });
     if (it != enumType.end())
     {
         return it->first;
@@ -50,14 +50,14 @@ template <typename T> inline std::string toString(const EnumType<T> &enumType, c
 template <typename T> class NL_Json_Basic
 {
 public:
-    virtual void fromJson(const nlohmann::json &json) = 0;
+    virtual void fromJson(const nlohmann::json& json) = 0;
     T virtual value() const = 0;
 };
 
 template <typename T> class BasicType : public NL_Json_Basic<T>
 {
 public:
-    void fromJson(const nlohmann::json &json) override { value_ = json.get<T>(); }
+    void fromJson(const nlohmann::json& json) override { value_ = json.get<T>(); }
     T value() const override { return value_; }
 
 private:
@@ -73,10 +73,10 @@ using Integer = BasicType<int32_t>;
 template <typename T1, typename T2> class NL_Json_Array : public NL_Json_Basic<std::vector<T2>>
 {
 public:
-    void fromJson(const nlohmann::json &json) override
+    void fromJson(const nlohmann::json& json) override
     {
         value_.clear();
-        for (const auto &item : json)
+        for (const auto& item : json)
         {
             T1 element;
             element.fromJson(item);

@@ -23,7 +23,11 @@
 namespace Firebolt::Helpers
 {
 
-SubscriptionManager::SubscriptionManager(IHelper &helper, void *owner) : helper_(helper), owner_(owner) {}
+SubscriptionManager::SubscriptionManager(IHelper& helper, void* owner)
+    : helper_(helper),
+      owner_(owner)
+{
+}
 SubscriptionManager::~SubscriptionManager()
 {
     unsubscribeAll();
@@ -45,9 +49,9 @@ public:
     ~HelperImpl() override
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        for (auto &subscription : subscriptions_)
+        for (auto& subscription : subscriptions_)
         {
-            void *notificationPtr = reinterpret_cast<void *>(&subscription.second);
+            void* notificationPtr = reinterpret_cast<void*>(&subscription.second);
             Firebolt::Transport::GetGatewayInstance().unsubscribe(subscription.second.eventName, notificationPtr);
         }
         subscriptions_.clear();
@@ -88,20 +92,20 @@ public:
         {
             return Result<void>{Error::General};
         }
-        void *notificationPtr = reinterpret_cast<void *>(&it->second);
+        void* notificationPtr = reinterpret_cast<void*>(&it->second);
         auto errorStatus{Firebolt::Transport::GetGatewayInstance().unsubscribe(it->second.eventName, notificationPtr)};
         subscriptions_.erase(it);
         return Result<void>{errorStatus};
     }
 
-    void unsubscribeAll(void *owner) override
+    void unsubscribeAll(void* owner) override
     {
         std::lock_guard<std::mutex> lock(mutex_);
         for (auto it = subscriptions_.begin(); it != subscriptions_.end();)
         {
             if (it->second.owner == owner)
             {
-                void *notificationPtr = reinterpret_cast<void *>(&it->second);
+                void* notificationPtr = reinterpret_cast<void*>(&it->second);
                 Firebolt::Transport::GetGatewayInstance().unsubscribe(it->second.eventName, notificationPtr);
                 it = subscriptions_.erase(it);
             }
@@ -113,7 +117,7 @@ public:
     }
 
 private:
-    Result<nlohmann::json> getJson(const std::string &methodName, const nlohmann::json &parameters) override
+    Result<nlohmann::json> getJson(const std::string& methodName, const nlohmann::json& parameters) override
     {
         auto future = Firebolt::Transport::GetGatewayInstance().request(methodName, parameters);
         auto result = future.get();
@@ -125,13 +129,13 @@ private:
         return Result<nlohmann::json>{*result};
     }
 
-    Result<SubscriptionId> subscribe(void *owner, const std::string &eventName, std::any &&notification,
-                                     void (*callback)(void *, const nlohmann::json &)) override
+    Result<SubscriptionId> subscribe(void* owner, const std::string& eventName, std::any&& notification,
+                                     void (*callback)(void*, const nlohmann::json&)) override
     {
         std::lock_guard<std::mutex> lock(mutex_);
         uint64_t newId = currentId_++;
         subscriptions_[newId] = SubscriptionData{owner, eventName, std::move(notification)};
-        void *notificationPtr = reinterpret_cast<void *>(&subscriptions_[newId]);
+        void* notificationPtr = reinterpret_cast<void*>(&subscriptions_[newId]);
 
         Error status = Firebolt::Transport::GetGatewayInstance().subscribe(eventName, callback, notificationPtr);
 

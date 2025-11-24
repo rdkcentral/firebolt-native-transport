@@ -155,7 +155,7 @@ unsigned Transport::getNextMessageID()
     return ++id_counter_;
 }
 
-Firebolt::Error Transport::send(const std::string &method, const nlohmann::json &params, const unsigned id)
+Firebolt::Error Transport::send(const std::string& method, const nlohmann::json& params, const unsigned id)
 {
     if (connectionStatus_ != TransportState::Connected)
     {
@@ -209,13 +209,13 @@ void Transport::onMessage(websocketpp::connection_hdl /* hdl */,
         }
         messageReceiver_(jsonMsg);
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
         FIREBOLT_LOG_ERROR("Transport", "Cannot parse payload: '%s'", msg->get_payload().c_str());
     }
 }
 
-void Transport::onOpen(websocketpp::client<websocketpp::config::asio_client> *c, websocketpp::connection_hdl hdl)
+void Transport::onOpen(websocketpp::client<websocketpp::config::asio_client>* c, websocketpp::connection_hdl hdl)
 {
     connectionStatus_ = TransportState::Connected;
 
@@ -223,14 +223,14 @@ void Transport::onOpen(websocketpp::client<websocketpp::config::asio_client> *c,
     connectionReceiver_(true, Firebolt::Error::None);
 }
 
-void Transport::onClose(websocketpp::client<websocketpp::config::asio_client> *c, websocketpp::connection_hdl hdl)
+void Transport::onClose(websocketpp::client<websocketpp::config::asio_client>* c, websocketpp::connection_hdl hdl)
 {
     connectionStatus_ = TransportState::Disconnected;
     client::connection_ptr con = c->get_con_from_hdl(hdl);
     connectionReceiver_(false, mapError(con->get_ec()));
 }
 
-void Transport::onFail(websocketpp::client<websocketpp::config::asio_client> *c, websocketpp::connection_hdl hdl)
+void Transport::onFail(websocketpp::client<websocketpp::config::asio_client>* c, websocketpp::connection_hdl hdl)
 {
     connectionStatus_ = TransportState::Disconnected;
     client::connection_ptr con = c->get_con_from_hdl(hdl);
