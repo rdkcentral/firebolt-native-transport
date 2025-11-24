@@ -61,7 +61,6 @@ list(APPEND CMAKE_MODULE_PATH
         "${SYSROOT_PATH}/usr/lib/cmake"
         "${SYSROOT_PATH}/tools/cmake")
 
-if (ENABLE_UNIT_TESTS)
-endif ()
+add_compile_options(-Wall -Wextra -Wpedantic)
 
 add_subdirectory(src)

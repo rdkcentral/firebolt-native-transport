@@ -71,9 +71,6 @@ struct Config
 
     /** Watchdog polling cycle in milliseconds. Default: 500. */
     unsigned watchdogCycle_ms = 500;
-
-    /** Provider method wait time (in ms). Default: -1 (infinite). */
-    int providerWaitTime = -1;
 };
 
 } // namespace Firebolt
