@@ -37,6 +37,7 @@ namespace Firebolt
 /* static */ bool Logger::formatter_addLocation = false;
 /* static */ bool Logger::formatter_addFunction = true;
 
+// clang-format off
 std::map<Firebolt::LogLevel, const char*> _logLevelNames = {
     {LogLevel::Error, "Error"},
     {LogLevel::Warning, "Warning"},
@@ -44,8 +45,10 @@ std::map<Firebolt::LogLevel, const char*> _logLevelNames = {
     {LogLevel::Info, "Info"},
     {LogLevel::Debug, "Debug"},
 };
+// clang-format on
 
 #ifdef ENABLE_SYSLOG
+// clang-format off
 std::map<Firebolt::LogLevel, int> _logLevel2SysLog = {
     {LogLevel::Error, LOG_ERR},
     {LogLevel::Warning, LOG_WARNING},
@@ -53,6 +56,7 @@ std::map<Firebolt::LogLevel, int> _logLevel2SysLog = {
     {LogLevel::Info, LOG_INFO},
     {LogLevel::Debug, LOG_DEBUG},
 };
+// clang-format on
 #endif
 
 void Logger::setLogLevel(LogLevel logLevel)
@@ -131,7 +135,8 @@ void Logger::log(LogLevel logLevel, const std::string& module, const std::string
     {
         len += snprintf(formattedMsg + len, sizeof(formattedMsg) - len, "%s: ", time.c_str());
     }
-    len += snprintf(formattedMsg + len, sizeof(formattedMsg) - len, "[Firebolt|%s|%s]", module.c_str(), levelName.c_str());
+    len +=
+        snprintf(formattedMsg + len, sizeof(formattedMsg) - len, "[Firebolt|%s|%s]", module.c_str(), levelName.c_str());
     if (formatter_addLocation || formatter_addFunction)
     {
         if (formatter_addLocation && formatter_addFunction)
