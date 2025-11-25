@@ -1,3 +1,10 @@
+# [1.0.0-next.17](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.16...v1.0.0-next.17) (2025-11-25)
+
+
+### Features
+
+* Add Notice log level ([#27](https://github.com/rdkcentral/firebolt-native-transport/issues/27)) ([1e8b71e](https://github.com/rdkcentral/firebolt-native-transport/commit/1e8b71eff8e9e471c2d3a05640d046800e1d410a))
+
 # [1.0.0-next.16](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.15...v1.0.0-next.16) (2025-11-25)
 
 
