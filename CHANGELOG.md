@@ -1,3 +1,10 @@
+# [1.0.0-next.18](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.17...v1.0.0-next.18) (2025-11-25)
+
+
+### Features
+
+* Do not use dirty part in git describe ([#28](https://github.com/rdkcentral/firebolt-native-transport/issues/28)) ([92486b6](https://github.com/rdkcentral/firebolt-native-transport/commit/92486b66181719dbeb829e5ba2fdbaaaeea2c12f))
+
 # [1.0.0-next.17](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.16...v1.0.0-next.17) (2025-11-25)
 
 
