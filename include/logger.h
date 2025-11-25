@@ -68,6 +68,11 @@ private:
     {                                                                                                                  \
         FIREBOLT_LOG(Firebolt::LogLevel::Warning, module, __VA_ARGS__);                                                \
     } while (0)
+#define FIREBOLT_LOG_NOTICE(module, ...)                                                                               \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        FIREBOLT_LOG(Firebolt::LogLevel::Notice, module, __VA_ARGS__);                                                 \
+    } while (0)
 #define FIREBOLT_LOG_INFO(module, ...)                                                                                 \
     do                                                                                                                 \
     {                                                                                                                  \

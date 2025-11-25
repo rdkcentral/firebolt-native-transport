@@ -286,7 +286,7 @@ public:
         std::optional<unsigned> transportLoggingInclude = cfg.log.transportInclude;
         std::optional<unsigned> transportLoggingExclude = cfg.log.transportExclude;
 
-        FIREBOLT_LOG_INFO("Firebolt-Transport", "Version: %s", Version::String);
+        FIREBOLT_LOG_NOTICE("Transport", "Version: %s", Version::String);
         FIREBOLT_LOG_INFO("Gateway", "Connecting to url = %s", url.c_str());
         Firebolt::Error status = transport.connect(
             url, [this](const nlohmann::json& message) { this->onMessage(message); },
