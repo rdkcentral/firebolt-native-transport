@@ -21,6 +21,8 @@ include(CMakePackageConfigHelpers)
 set(TARGET ${PROJECT_NAME})
 message("Setup ${TARGET} v${PROJECT_VERSION}")
 
+string(TOLOWER "${TARGET}" TARGET_LOWER)
+
 file(GLOB SOURCES *.cpp)
 
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
@@ -34,6 +36,12 @@ find_package(nlohmann_json CONFIG REQUIRED)
 find_package(websocketpp CONFIG REQUIRED)
 
 generate_export_header(${TARGET})
+
+configure_file(
+    "${CMAKE_SOURCE_DIR}/include/version.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_LOWER}_version.h"
+    @ONLY
+)
 
 target_link_libraries(${TARGET}
     PRIVATE
@@ -90,9 +98,10 @@ install(
     FILES_MATCHING PATTERN "*.h"
 )
 
-string(TOLOWER "${TARGET}" TARGET_LOWER)
 install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_LOWER}_export.h
+    FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_LOWER}_export.h
+        ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_LOWER}_version.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/firebolt
 )
 
