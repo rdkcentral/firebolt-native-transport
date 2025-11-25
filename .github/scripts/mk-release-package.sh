@@ -31,8 +31,8 @@ else
   git ls-files $sub_path | git checkout-index --stdin -qf --prefix="$dist_path.tmp/"
   mv -T "$dist_path.tmp/$sub_path/" "$dist_path/"
 fi
-sed -i -e '/# <VERSION_BLOCK>/,/# <\/VERSION_BLOCK>/cset(PROJECT_VERSION \"'"$version"'\")' "$dist_path/CMakeLists.txt"
 rm -rf $dist_path/package.json $dist_path/package-lock.json $dist_path/.releaserc.json $dist_path/.github
+echo "$version" >$dist_path/.version
 tar -czf "build/$dist_name.tar.gz" -C "build" "$dist_name"
 echo "sha256sum  : $(sha256sum build/$dist_name.tar.gz)"
 
