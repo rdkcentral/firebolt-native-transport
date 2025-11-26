@@ -133,20 +133,22 @@ Firebolt::Error Transport::disconnect()
     }
     client_.stop_perpetual();
 
-    if (connectionStatus_ != TransportState::Connected)
+    if (connectionStatus_ == TransportState::Connected)
     {
-        return Firebolt::Error::None;
+        websocketpp::lib::error_code ec;
+        client_.close(connectionHandle_, websocketpp::close::status::going_away, "", ec);
+        if (ec)
+        {
+            FIREBOLT_LOG_ERROR("Transport", "Error closing connection: %s", ec.message().c_str());
+        }
     }
 
-    websocketpp::lib::error_code ec;
-    client_.close(connectionHandle_, websocketpp::close::status::going_away, "", ec);
-    if (ec)
+    if (connectionThread_ && connectionThread_->joinable())
     {
-        FIREBOLT_LOG_ERROR("Transport", "Error closing connection: %s", ec.message().c_str());
-        return mapError(ec);
+        connectionThread_->join();
     }
 
-    connectionThread_->join();
+    connectionStatus_ = TransportState::NotStarted;
     return Firebolt::Error::None;
 }
 
