@@ -203,9 +203,17 @@ public:
     {
         std::string key = method;
         nlohmann::json params;
-        if (parameters.contains("value") && parameters.size() == 1)
+        if (parameters.size() == 1)
         {
-            params = parameters["value"];
+            const auto firstValue = parameters.begin().value();
+            if (!firstValue.is_object())
+            {
+                params = firstValue;
+            }
+            else
+            {
+                params = parameters;
+            }
         }
         else
         {
