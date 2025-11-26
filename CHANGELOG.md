@@ -1,3 +1,16 @@
+# [1.0.0-next.19](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.18...v1.0.0-next.19) (2025-11-26)
+
+
+### Bug Fixes
+
+* Disconnect ([4019c2c](https://github.com/rdkcentral/firebolt-native-transport/commit/4019c2cf42289fa76c91f6f065ec4c1177078677))
+* Get primitive from a notification payload (less strict) ([40a5805](https://github.com/rdkcentral/firebolt-native-transport/commit/40a58058a3481a52500045108459951d6de003a3))
+
+
+### Features
+
+* Set ExactVersion compatibility ([2358a91](https://github.com/rdkcentral/firebolt-native-transport/commit/2358a91874f8cce1b8a72e5bd3ee5246aa03e9d6))
+
 # [1.0.0-next.18](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.17...v1.0.0-next.18) (2025-11-25)
 
 
