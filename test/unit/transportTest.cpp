@@ -68,7 +68,8 @@ protected:
 
             websocketpp::log::level include = websocketpp::log::alevel::all;
             websocketpp::log::level exclude = (websocketpp::log::alevel::frame_header |
-                                            websocketpp::log::alevel::frame_payload | websocketpp::log::alevel::control);
+                                               websocketpp::log::alevel::frame_payload |
+                                               websocketpp::log::alevel::control);
             m_server.set_access_channels(include);
             m_server.clear_access_channels(exclude);
             m_server.listen(9002);
