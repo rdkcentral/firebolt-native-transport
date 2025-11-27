@@ -36,7 +36,7 @@ using ConnectionCallback = std::function<void(const bool connected, Firebolt::Er
 class Transport
 {
 public:
-    Transport() = default;
+    Transport();
     Transport(const Transport&) = delete;
     Transport(Transport&&) = delete;
     Transport& operator=(const Transport&) = delete;
@@ -62,13 +62,13 @@ private:
 private:
     enum class TransportState;
 
+    std::atomic<TransportState> connectionStatus_;
     std::atomic<unsigned> id_counter_ = 0;
+    bool debugEnabled_ = false;
     MessageCallback messageReceiver_;
     ConnectionCallback connectionReceiver_;
     websocketpp::client<websocketpp::config::asio_client> client_;
     websocketpp::lib::shared_ptr<websocketpp::lib::thread> connectionThread_;
     websocketpp::connection_hdl connectionHandle_;
-    std::atomic<TransportState> connectionStatus_;
-    bool debugEnabled_ = false;
 };
 } // namespace Firebolt::Transport
