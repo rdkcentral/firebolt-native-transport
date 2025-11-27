@@ -54,6 +54,13 @@ static Firebolt::Error mapError(websocketpp::lib::error_code error)
     }
 }
 
+Transport::Transport()
+    : connectionStatus_(TransportState::NotStarted),
+      id_counter_(0),
+      debugEnabled_(false)
+{
+}
+
 Transport::~Transport()
 {
     disconnect();
