@@ -4,14 +4,16 @@ set -e
 
 bdir="build"
 do_install=false
+params=
 buildType="Debug"
 
 while [[ ! -z $1 ]]; do
   case $1 in
-  --clean ) rm -rf $bdir;;
-  -i | --install) do_install=true;;
+  --clean) rm -rf $bdir;;
   --release) buildTarget="Release";;
   --sysroot) SYSROOT_PATH="$2"; shift;;
+  -i | --install) do_install=true;;
+  +tests) params+=" -DENABLE_TESTS=ON";;
   --) shift; break;;
   *) break;;
   esac; shift
@@ -24,10 +26,11 @@ if [[ ! -e $bdir ]]; then
   cmake -B $bdir \
     -DCMAKE_BUILD_TYPE=$buildType \
     -DSYSROOT_PATH=$SYSROOT_PATH \
+    $params \
     "$@"
 fi
-cmake --build $bdir
+cmake --build $bdir || exit $?
 if $do_install; then
-  cmake --install $bdir
+  cmake --install $bdir || exit $?
 fi
 

@@ -55,7 +55,8 @@ string(REGEX REPLACE "^v?([0-9]+)\\.([0-9]+)\\.([0-9]+).*" "\\3" PROJECT_VERSION
 message(STATUS "Project version: ${PROJECT_VERSION}")
 
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
-option(ENABLE_UNIT_TESTS "Build openrpc native test" OFF)
+option(ENABLE_TESTS "Build tests" OFF)
+option(DISCOVER_UT "Discover all Unit Tests" ON)
 
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "${SYSROOT_PATH}/usr" CACHE INTERNAL "" FORCE)
@@ -73,3 +74,7 @@ list(APPEND CMAKE_MODULE_PATH
 add_compile_options(-Wall -Wextra -Wpedantic)
 
 add_subdirectory(src)
+
+if (ENABLE_TESTS)
+    add_subdirectory(test)
+endif()
