@@ -2,13 +2,11 @@ name: Automatic Semantic Release
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - next
-      - '+([0-9])\.+([0-9])\.x-maintenance'
 
 jobs:
   release:
+    if: github.ref_name == 'main' || github.ref_name == 'next' || endsWith(github.ref_name, '.x-maintenance')
+                                                                       # '+([0-9])\.+([0-9])\.x-maintenance'
     runs-on: ubuntu-latest
     permissions:
       contents: write
