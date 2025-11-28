@@ -28,7 +28,7 @@
 namespace Firebolt::JSON
 {
 
-template <typename T> using EnumType = std::map<std::string>;
+template <typename T> using EnumType = std::map<std::string, T>;
 template <typename T> inline std::string toString(const EnumType<T>& enumType, const T& value)
 {
     auto it = std::find_if(enumType.begin(), enumType.end(), [&value](const auto& pair) { return pair.second == value; });
