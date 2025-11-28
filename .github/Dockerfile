@@ -20,15 +20,17 @@ RUN mkdir -p ${SYSROOT_PATH} /deps
 ARG DEPS_GOOGLETEST_V="1.15.2"
 RUN cd /deps \
     && dir="googletest-${DEPS_GOOGLETEST_V}" \
-    && echo "cmd: curl -sL https://github.com/google/googletest/releases/download/v${DEPS_GOOGLETEST_V}/${dir}.tar.gz | tar xzf -" \
-    && curl -sL https://github.com/google/googletest/releases/download/v${DEPS_GOOGLETEST_V}/${dir}.tar.gz | tar xzf - \
-    && cmake -B "build/${dir}" \
+    && curl -sL --retry 5 --retry-delay 2 --fail \
+        https://github.com/google/googletest/releases/download/v${DEPS_GOOGLETEST_V}/$dir.tar.gz \
+        -o $dir.tar.gz \
+    && tar xzf $dir.tar.gz \
+    && cmake -B "build/$dir" \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX:PATH="${SYSROOT_PATH}/usr" \
           -DBUILD_SHARED_LIBS=ON \
-          "${dir}" \
-    && cmake --build "build/${dir}" --target install \
-    && rm -rf "build/${dir}" "${dir}"
+          "$dir" \
+    && cmake --build "build/$dir" --target install \
+    && rm -rf "build/$dir" "$dir"
 
 ARG DEPS_NLOHMANN_JSON_V="3.11.3"
 RUN cd /deps \
