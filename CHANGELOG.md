@@ -1,3 +1,10 @@
+# [1.0.0-next.20](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.19...v1.0.0-next.20) (2025-11-28)
+
+
+### Features
+
+* Do not ignore case in enum string comparison ([820bce4](https://github.com/rdkcentral/firebolt-native-transport/commit/820bce4cbdde7f30a5e7c179b48ebe944d2b9f6d))
+
 # [1.0.0-next.19](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.18...v1.0.0-next.19) (2025-11-26)
 
 
