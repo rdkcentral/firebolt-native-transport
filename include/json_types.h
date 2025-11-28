@@ -28,15 +28,7 @@
 namespace Firebolt::JSON
 {
 
-struct ICaseComparator
-{
-    bool operator()(const std::string& a, const std::string& b) const noexcept
-    {
-        return ::strcasecmp(a.c_str(), b.c_str()) < 0;
-    }
-};
-
-template <typename T> using EnumType = std::map<std::string, T, ICaseComparator>;
+template <typename T> using EnumType = std::map<std::string>;
 template <typename T> inline std::string toString(const EnumType<T>& enumType, const T& value)
 {
     auto it = std::find_if(enumType.begin(), enumType.end(), [&value](const auto& pair) { return pair.second == value; });
