@@ -20,6 +20,7 @@ RUN mkdir -p ${SYSROOT_PATH} /deps
 ARG DEPS_GOOGLETEST_V="1.15.2"
 RUN cd /deps \
     && dir="googletest-${DEPS_GOOGLETEST_V}" \
+    && echo "cmd: curl -sL https://github.com/google/googletest/releases/download/v${DEPS_GOOGLETEST_V}/$dir.tar.gz | tar xzf -" \
     && curl -sL https://github.com/google/googletest/releases/download/v${DEPS_GOOGLETEST_V}/$dir.tar.gz | tar xzf - \
     && cmake -B "build/$dir" \
           -DCMAKE_BUILD_TYPE=Release \
