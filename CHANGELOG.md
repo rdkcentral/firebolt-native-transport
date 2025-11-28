@@ -1,3 +1,10 @@
+# [1.0.0-next.21](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.20...v1.0.0-next.21) (2025-11-28)
+
+
+### Bug Fixes
+
+* Typo ([4d0ef42](https://github.com/rdkcentral/firebolt-native-transport/commit/4d0ef42e9d89011479e04b63d78f6cd6048cc8ab))
+
 # [1.0.0-next.20](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.19...v1.0.0-next.20) (2025-11-28)
 
 
