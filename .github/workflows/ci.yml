@@ -6,89 +6,76 @@ on:
   pull_request:
     branches: [ main, next, '+([0-9])\.+([0-9])\.x-maintenance' ]
 
-
 env:
-  SYSROOT_PATH: ${{ github.workspace }}/deps_install
-  DEPS_FILE: ${{ github.workspace }}/.github/deps
+  SYSROOT_PATH: /opt/sysroot
 
 jobs:
-  setup_deps:
+  build_docker_image:
     runs-on: ubuntu-latest
-    outputs:
-      deps_cache_key: ${{ steps.cache-key.outputs.hash }}
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Generate Dependency Hash Key
-        id: cache-key
-        run: echo "hash=$(sha256sum ${{env.DEPS_FILE}} | awk '{print $1}')" >> $GITHUB_OUTPUT
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Restore Dependency Cache
-        uses: actions/cache@v4
-        id: cache-restore
+      - name: Build Docker Image
+        uses: docker/build-push-action@v5
         with:
-          path: ${{ env.SYSROOT_PATH }}
-          key: ${{ runner.os }}-deps-${{ steps.cache-key.outputs.hash }}
+          context: .
+          file: .github/Dockerfile
+          build-args: |
+            SYSROOT_PATH=${{ env.SYSROOT_PATH }}
+          tags: firebolt-native-transport-ci:latest
+          push: false
+          outputs: type=docker,dest=/tmp/ci-image.tar
+          cache-from: type=gha,scope=${{ github.workflow }}
+          cache-to: type=gha,mode=max,scope=${{ github.workflow }}
 
-      - name: Build and Install System-Dependencies
-        if: false && steps.cache-restore.outputs.cache-hit != 'true'
-        run: |
-          echo "Installing Boost..."
-          sudo apt-get update
-          sudo apt-get install -y libboost-all-dev
-          echo "Copying Boost to SYSROOT..."
-          mkdir -p ${{ env.SYSROOT_PATH }}/include/ ${{ env.SYSROOT_PATH }}/lib/
-          sudo cp -r /usr/include/boost ${{ env.SYSROOT_PATH }}/include/
-          sudo cp /usr/lib/x86_64-linux-gnu/libboost_* ${{ env.SYSROOT_PATH }}/lib/
-
-      - name: Build and Install Project Dependencies
-        if: steps.cache-restore.outputs.cache-hit != 'true'
-        run: |
-          echo "Building dependencies..."
-          mkdir -p ${{ env.SYSROOT_PATH }}
-          ./.github/scripts/install-deps.sh --deps "${{env.DEPS_FILE}}" --sysroot "${{ env.SYSROOT_PATH }}"
-          echo "Dependencies built and installed to ${{ env.SYSROOT_PATH }}"
-
-      - name: Cache Save Confirmation
-        if: steps.cache-restore.outputs.cache-hit != 'true'
-        run: echo "New dependency cache will be saved."
+      - name: Upload Docker Image
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-image
+          path: /tmp/ci-image.tar
 
   format_check:
+    needs: build_docker_image
     runs-on: ubuntu-latest
     steps:
+      - name: Download Docker Image
+        uses: actions/download-artifact@v4
+        with:
+          name: ci-image
+          path: /tmp
+
+      - name: Load Docker Image
+        run: docker load --input /tmp/ci-image.tar
+
       - name: Checkout Code
         uses: actions/checkout@v4
-
-      - name: Install clang-format
-        run: sudo apt-get update && sudo apt-get install -y clang-format
 
       - name: Run clang-format check
         run: |
-          git ls-files -- '*.cpp' '*.h' | xargs clang-format --dry-run --Werror
+          docker run --rm -v ${{ github.workspace }}:/workspace firebolt-native-transport-ci:latest \
+            bash -c "git ls-files -- '*.cpp' '*.h' | xargs clang-format --dry-run --Werror"
 
   build_project:
-    needs: setup_deps
+    needs: build_docker_image
     runs-on: ubuntu-latest
-
     steps:
+      - name: Download Docker Image
+        uses: actions/download-artifact@v4
+        with:
+          name: ci-image
+          path: /tmp
+
+      - name: Load Docker Image
+        run: docker load --input /tmp/ci-image.tar
+
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Restore Dependency Cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.SYSROOT_PATH }}
-          key: ${{ runner.os }}-deps-${{ needs.setup_deps.outputs.deps_cache_key }}
-
-      - name: Build and Install Boost
-        run: |
-          echo "Installing Boost..."
-          sudo apt-get update
-          sudo apt-get install -y libboost-all-dev
 
       - name: Get version
         run: |
@@ -96,15 +83,16 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "version: $VERSION"
 
-      - name: Configure CMake
+      - name: Configure, Build and Test
         run: |
-          cmake -B build \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX:PATH="${{ env.SYSROOT_PATH }}/usr" \
-            -DSYSROOT_PATH=${{ env.SYSROOT_PATH }}
-
-      - name: Build Project
-        run: cmake --build build
+          docker run --rm -v ${{ github.workspace }}:/workspace firebolt-native-transport-ci:latest \
+            bash -c "cmake -B build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX:PATH=\"${{ env.SYSROOT_PATH }}/usr\" \
+              -DSYSROOT_PATH=${{ env.SYSROOT_PATH }} \
+              -DENABLE_TESTS=ON -DDISCOVER_UT=ON && \
+            cmake --build build && \
+            ctest --test-dir build/test"
 
       - name: Make Release package of Transport sources
         run: |
