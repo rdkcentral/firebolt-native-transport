@@ -34,6 +34,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
 
+      - name: Add Checksum to Job Summary
+        shell: bash
+        run: |
+          (
+            echo "# Release Package Checksum"
+            echo
+            echo '```'
+            cd ${{ github.workspace }}/build && sha256sum *.tar.gz
+            echo '```'
+            echo
+          ) >> $GITHUB_STEP_SUMMARY
+
       - name: Sync main back to next
         if: steps.semantic.outputs.new_release_published == 'true' && github.ref == 'refs/heads/main'
         run: |
