@@ -14,6 +14,17 @@ while [[ ! -z $1 ]]; do
   --sysroot) SYSROOT_PATH="$2"; shift;;
   -i | --install) do_install=true;;
   +tests) params+=" -DENABLE_TESTS=ON";;
+  +gen-cov)
+    set -e
+    cd build
+    ctest --test-dir ./test
+    mkdir -p coverage
+    gcovr -r .. \
+      --gcov-exclude-directory 'test' \
+      --medium-threshold 50 --high-threshold 75 \
+      --html-details coverage/index.html \
+      --cobertura coverage.cobertura.xml
+    exit 0;;
   --) shift; break;;
   *) break;;
   esac; shift
