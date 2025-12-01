@@ -37,6 +37,11 @@ add_library(${TARGET}
     ${SOURCES}
 )
 
+if(ENABLE_TESTS)
+    target_compile_options(${TARGET} PRIVATE --coverage -g -O0 -fno-inline)
+    target_link_options(${TARGET} PRIVATE --coverage)
+endif()
+
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(websocketpp CONFIG REQUIRED)
 
@@ -78,7 +83,7 @@ write_basic_package_version_file(
 )
 
 configure_package_config_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/${PROJECT_NAME}Config.cmake.in"
+    "${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
     INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
 )

@@ -38,6 +38,9 @@ add_executable(${UNIT_TESTS_APP}
     ${UNIT_TESTS}
 )
 
+target_compile_options(${UNIT_TESTS_APP} PRIVATE --coverage -g -O0 -fno-inline)
+target_link_options(${UNIT_TESTS_APP} PRIVATE --coverage)
+
 target_link_libraries(${UNIT_TESTS_APP}
     PRIVATE
         FireboltTransport
@@ -68,4 +71,3 @@ if(DISCOVER_UT)
             ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/src"
     )
 endif()
-
