@@ -39,7 +39,7 @@ if [[ ! -e $bdir ]]; then
     -DCMAKE_BUILD_TYPE=$buildType \
     -DSYSROOT_PATH=$SYSROOT_PATH \
     $params \
-    "$@"
+    "$@" || exit $?
 fi
 cmake --build $bdir || exit $?
 if $do_install; then

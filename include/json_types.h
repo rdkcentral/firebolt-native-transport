@@ -68,6 +68,10 @@ public:
     void fromJson(const nlohmann::json& json) override
     {
         value_.clear();
+        if (!json.is_array())
+        {
+            throw nlohmann::json::type_error::create(302, "type must be array", nullptr);
+        }
         for (const auto& item : json)
         {
             T1 element;

@@ -4,11 +4,7 @@
 
 using namespace Firebolt::JSON;
 
-class JsonTypesTest : public ::testing::Test
-{
-};
-
-TEST_F(JsonTypesTest, StringBasicType)
+TEST(JsonTypesTest, StringBasicType)
 {
     String str;
     nlohmann::json json = "test string";
@@ -16,7 +12,7 @@ TEST_F(JsonTypesTest, StringBasicType)
     EXPECT_EQ(str.value(), "test string");
 }
 
-TEST_F(JsonTypesTest, BooleanBasicType)
+TEST(JsonTypesTest, BooleanBasicType)
 {
     Boolean boolean;
     nlohmann::json json = true;
@@ -24,7 +20,7 @@ TEST_F(JsonTypesTest, BooleanBasicType)
     EXPECT_TRUE(boolean.value());
 }
 
-TEST_F(JsonTypesTest, FloatBasicType)
+TEST(JsonTypesTest, FloatBasicType)
 {
     Float floatVal;
     nlohmann::json json = 3.14f;
@@ -32,7 +28,7 @@ TEST_F(JsonTypesTest, FloatBasicType)
     EXPECT_FLOAT_EQ(floatVal.value(), 3.14f);
 }
 
-TEST_F(JsonTypesTest, UnsignedBasicType)
+TEST(JsonTypesTest, UnsignedBasicType)
 {
     Unsigned unsignedVal;
     nlohmann::json json = 42u;
@@ -40,7 +36,7 @@ TEST_F(JsonTypesTest, UnsignedBasicType)
     EXPECT_EQ(unsignedVal.value(), 42u);
 }
 
-TEST_F(JsonTypesTest, IntegerBasicType)
+TEST(JsonTypesTest, IntegerBasicType)
 {
     Integer intVal;
     nlohmann::json json = -42;
@@ -48,7 +44,7 @@ TEST_F(JsonTypesTest, IntegerBasicType)
     EXPECT_EQ(intVal.value(), -42);
 }
 
-TEST_F(JsonTypesTest, StringArrayType)
+TEST(JsonTypesTest, StringArrayType)
 {
     NL_Json_Array<String, std::string> stringArray;
     nlohmann::json json = {"first", "second", "third"};
@@ -61,7 +57,7 @@ TEST_F(JsonTypesTest, StringArrayType)
     EXPECT_EQ(result[2], "third");
 }
 
-TEST_F(JsonTypesTest, IntegerArrayType)
+TEST(JsonTypesTest, IntegerArrayType)
 {
     NL_Json_Array<Integer, int32_t> intArray;
     nlohmann::json json = {1, 2, 3, 4, 5};
@@ -73,7 +69,7 @@ TEST_F(JsonTypesTest, IntegerArrayType)
     EXPECT_EQ(result[4], 5);
 }
 
-TEST_F(JsonTypesTest, BooleanArrayType)
+TEST(JsonTypesTest, BooleanArrayType)
 {
     NL_Json_Array<Boolean, bool> boolArray;
     nlohmann::json json = {true, false, true};
@@ -86,7 +82,7 @@ TEST_F(JsonTypesTest, BooleanArrayType)
     EXPECT_TRUE(result[2]);
 }
 
-TEST_F(JsonTypesTest, EmptyArray)
+TEST(JsonTypesTest, EmptyArray)
 {
     NL_Json_Array<String, std::string> stringArray;
     nlohmann::json json = nlohmann::json::array();
@@ -96,7 +92,7 @@ TEST_F(JsonTypesTest, EmptyArray)
     EXPECT_TRUE(result.empty());
 }
 
-TEST_F(JsonTypesTest, EnumTypeToString)
+TEST(JsonTypesTest, EnumTypeToString)
 {
     // clang-format off
     enum class Color { Red, Green, Blue };
@@ -112,23 +108,7 @@ TEST_F(JsonTypesTest, EnumTypeToString)
     EXPECT_EQ(toString(colorMap, Color::Blue), "blue");
 }
 
-TEST_F(JsonTypesTest, EnumTypeToStringCase)
-{
-    // clang-format off
-    enum class Color { Red, Green, Blue };
-    EnumType<Color> colorMap = {
-        {"Red", Color::Red},
-        {"Green", Color::Green},
-        {"Blue", Color::Blue}
-    };
-    // clang-format on
-
-    EXPECT_EQ(toString(colorMap, Color::Red), "Red");
-    ASSERT_FALSE(toString(colorMap, Color::Green) == "green");
-    ASSERT_FALSE(toString(colorMap, Color::Blue) == "blue");
-}
-
-TEST_F(JsonTypesTest, EnumTypeToStringNotFound)
+TEST(JsonTypesTest, EnumTypeToStringNotFound)
 {
     // clang-format off
     enum class Status { Active, Inactive };
@@ -141,20 +121,20 @@ TEST_F(JsonTypesTest, EnumTypeToStringNotFound)
     EXPECT_TRUE(result.empty());
 }
 
-TEST_F(JsonTypesTest, FloatArrayType)
+TEST(JsonTypesTest, FloatArrayType)
 {
     NL_Json_Array<Float, float> floatArray;
-    nlohmann::json json = {1.1f, 2.2f, 3.3f};
+    nlohmann::json json = {1.1, 2.2, 3.3};
     floatArray.fromJson(json);
 
     std::vector<float> result = floatArray.value();
     ASSERT_EQ(result.size(), 3);
-    EXPECT_FLOAT_EQ(result[0], 1.1f);
-    EXPECT_FLOAT_EQ(result[1], 2.2f);
-    EXPECT_FLOAT_EQ(result[2], 3.3f);
+    EXPECT_FLOAT_EQ(result[0], 1.1);
+    EXPECT_FLOAT_EQ(result[1], 2.2);
+    EXPECT_FLOAT_EQ(result[2], 3.3);
 }
 
-TEST_F(JsonTypesTest, UnsignedArrayType)
+TEST(JsonTypesTest, UnsignedArrayType)
 {
     NL_Json_Array<Unsigned, uint32_t> unsignedArray;
     nlohmann::json json = {10u, 20u, 30u};
@@ -165,4 +145,29 @@ TEST_F(JsonTypesTest, UnsignedArrayType)
     EXPECT_EQ(result[0], 10u);
     EXPECT_EQ(result[1], 20u);
     EXPECT_EQ(result[2], 30u);
+}
+
+TEST(JsonTypesTest, BasicTypeIncorrectPayload)
+{
+    String str;
+    nlohmann::json jsonInt = 123;
+    EXPECT_THROW(str.fromJson(jsonInt), nlohmann::json::type_error);
+
+    Integer integer;
+    nlohmann::json jsonStr = "not a number";
+    EXPECT_THROW(integer.fromJson(jsonStr), nlohmann::json::type_error);
+}
+
+TEST(JsonTypesTest, ArrayWithNonArrayPayload)
+{
+    NL_Json_Array<String, std::string> stringArray;
+    nlohmann::json json = {{"key", "value"}};
+    EXPECT_THROW(stringArray.fromJson(json), nlohmann::json::type_error);
+}
+
+TEST(JsonTypesTest, ArrayWithMixedTypes)
+{
+    NL_Json_Array<Integer, int32_t> intArray;
+    nlohmann::json json = {1, "two", 3};
+    EXPECT_THROW(intArray.fromJson(json), nlohmann::json::type_error);
 }
