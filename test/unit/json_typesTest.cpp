@@ -98,12 +98,14 @@ TEST_F(JsonTypesTest, EmptyArray)
 
 TEST_F(JsonTypesTest, EnumTypeToString)
 {
+    // clang-format off
     enum class Color { Red, Green, Blue };
     EnumType<Color> colorMap = {
         {"red", Color::Red},
         {"green", Color::Green},
         {"blue", Color::Blue}
     };
+    // clang-format on
 
     EXPECT_EQ(toString(colorMap, Color::Red), "red");
     EXPECT_EQ(toString(colorMap, Color::Green), "green");
@@ -112,12 +114,14 @@ TEST_F(JsonTypesTest, EnumTypeToString)
 
 TEST_F(JsonTypesTest, EnumTypeToStringCase)
 {
+    // clang-format off
     enum class Color { Red, Green, Blue };
     EnumType<Color> colorMap = {
         {"Red", Color::Red},
         {"Green", Color::Green},
         {"Blue", Color::Blue}
     };
+    // clang-format on
 
     EXPECT_EQ(toString(colorMap, Color::Red), "Red");
     ASSERT_FALSE(toString(colorMap, Color::Green) == "green");
@@ -126,10 +130,12 @@ TEST_F(JsonTypesTest, EnumTypeToStringCase)
 
 TEST_F(JsonTypesTest, EnumTypeToStringNotFound)
 {
+    // clang-format off
     enum class Status { Active, Inactive };
     EnumType<Status> statusMap = {
         {"active", Status::Active}
     };
+    // clang-format on
 
     std::string result = toString(statusMap, Status::Inactive);
     EXPECT_TRUE(result.empty());
