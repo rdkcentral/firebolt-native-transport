@@ -69,10 +69,9 @@ jobs:
 
       - name: Run clang-format check
         run: |
-          docker run --rm -v ${{ github.workspace }}:/workspace ${{ needs.build_docker.outputs.image_tag }} \
+          docker run --rm --user "$(id -u):$(id -g)" -v ${{ github.workspace }}:/workspace ${{ needs.build_docker.outputs.image_tag }} \
             bash -c " \
-                git config --global --add safe.directory /workspace \
-                git ls-files -- '*.cpp' '*.h' | xargs clang-format --dry-run --Werror \
+                && git ls-files -- '*.cpp' '*.h' | xargs clang-format --dry-run --Werror \
             "
 
   build_project:
