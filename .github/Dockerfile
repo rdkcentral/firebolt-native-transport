@@ -1,8 +1,8 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
     build-essential ca-certificates \
     cmake pkg-config clang-format \
     libboost-all-dev \
@@ -60,11 +60,11 @@ RUN cd /deps \
     && cmake --build "build/$dir" --target install \
     && rm -rf "build/$dir" "$dir"
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
     python3-pip \
     && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
-RUN pip install gcovr
+RUN pip install --break-system-packages gcovr
 
 WORKDIR /workspace
 
