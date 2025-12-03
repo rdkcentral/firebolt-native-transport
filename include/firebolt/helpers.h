@@ -19,9 +19,9 @@
 
 #pragma once
 
-#include "firebolttransport_export.h"
-#include "logger.h"
-#include "types.h"
+#include "firebolt/logger.h"
+#include "firebolt/transport_export.h"
+#include "firebolt/types.h"
 #include <any>
 #include <nlohmann/json.hpp>
 #include <string>

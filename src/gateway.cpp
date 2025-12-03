@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-#include "gateway.h"
-#include "firebolttransport_version.h"
-#include "logger.h"
+#include "firebolt/gateway.h"
+#include "firebolt/logger.h"
+#include "firebolt/transport_version.h"
+#include "firebolt/types.h"
 #include "transport.h"
-#include "types.h"
 #include <assert.h>
 #include <chrono>
 #include <future>

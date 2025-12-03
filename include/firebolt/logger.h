@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include "firebolttransport_export.h"
-#include "types.h"
+#include "firebolt/transport_export.h"
+#include "firebolt/types.h"
 #include <stdint.h>
 #include <string>
 
