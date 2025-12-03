@@ -45,11 +45,14 @@ endif()
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(websocketpp CONFIG REQUIRED)
 
-generate_export_header(${TARGET})
+generate_export_header(
+    ${TARGET}
+    EXPORT_FILE_NAME "firebolt/transport_export.h"
+)
 
 configure_file(
-    "${CMAKE_SOURCE_DIR}/include/version.h.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_LOWER}_version.h"
+    "${CMAKE_SOURCE_DIR}/include/firebolt/version.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/firebolt/transport_version.h"
     @ONLY
 )
 
@@ -104,14 +107,14 @@ install(
 
 install(
     DIRECTORY ${CMAKE_SOURCE_DIR}/include/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/firebolt
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/
     FILES_MATCHING PATTERN "*.h"
 )
 
 install(
     FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_LOWER}_export.h
-        ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_LOWER}_version.h
+        ${CMAKE_CURRENT_BINARY_DIR}/firebolt/transport_export.h
+        ${CMAKE_CURRENT_BINARY_DIR}/firebolt/transport_version.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/firebolt
 )
 

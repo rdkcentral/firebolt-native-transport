@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "firebolt/types.h"
 #include <optional>
 #include <string>
 

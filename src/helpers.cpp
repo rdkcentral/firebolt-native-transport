@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#include "helpers.h"
-#include "gateway.h"
+#include "firebolt/gateway.h"
+#include "firebolt/helpers.h"
 
 namespace Firebolt::Helpers
 {

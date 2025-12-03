@@ -1,4 +1,4 @@
-#include "json_types.h"
+#include "firebolt/json_types.h"
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 

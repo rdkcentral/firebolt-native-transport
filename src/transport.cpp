@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
+#include "firebolt/logger.h"
+#include "firebolt/types.h"
 #include "transport.h"
-#include "logger.h"
-#include "types.h"
 #include <assert.h>
 
 namespace Firebolt::Transport
