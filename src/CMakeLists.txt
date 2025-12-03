@@ -37,13 +37,24 @@ add_library(${TARGET}
     ${SOURCES}
 )
 
+add_library(${TARGET}::${TARGET} ALIAS ${TARGET})
+
 if(ENABLE_TESTS)
     target_compile_options(${TARGET} PRIVATE --coverage -g -O0 -fno-inline)
     target_link_options(${TARGET} PRIVATE --coverage)
 endif()
 
-find_package(nlohmann_json CONFIG REQUIRED)
-find_package(websocketpp CONFIG REQUIRED)
+if(NOT TARGET nlohmann_json::nlohmann_json)
+    find_package(nlohmann_json REQUIRED)
+endif()
+
+if(NOT TARGET websocketpp::websocketpp)
+    find_package(websocketpp REQUIRED)
+endif()
+
+if(NOT TARGET Boost::system)
+    find_package(Boost REQUIRED COMPONENTS system)
+endif()
 
 generate_export_header(
     ${TARGET}
@@ -51,7 +62,7 @@ generate_export_header(
 )
 
 configure_file(
-    "${CMAKE_SOURCE_DIR}/include/firebolt/version.h.in"
+    "${PROJECT_SOURCE_DIR}/include/firebolt/version.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/firebolt/transport_version.h"
     @ONLY
 )
@@ -64,10 +75,11 @@ target_link_libraries(${TARGET}
 
 target_include_directories(${TARGET}
     PRIVATE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
@@ -77,6 +89,7 @@ set_target_properties(${TARGET} PROPERTIES
     CXX_STANDARD_REQUIRED YES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
+    POSITION_INDEPENDENT_CODE ON
 )
 
 write_basic_package_version_file(
@@ -86,7 +99,7 @@ write_basic_package_version_file(
 )
 
 configure_package_config_file(
-    "${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in"
+    "${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
     INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
 )
@@ -106,7 +119,7 @@ install(
 )
 
 install(
-    DIRECTORY ${CMAKE_SOURCE_DIR}/include/
+    DIRECTORY ${PROJECT_SOURCE_DIR}/include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/
     FILES_MATCHING PATTERN "*.h"
 )
