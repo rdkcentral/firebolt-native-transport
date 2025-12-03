@@ -20,7 +20,7 @@ while [[ ! -z $1 ]]; do
     ctest --test-dir ./test
     mkdir -p coverage
     gcovr -r .. \
-      --gcov-exclude-directory 'test' \
+      --exclude 'test/*' -e '.*Test.cpp' \
       --decisions \
       --medium-threshold 50 --high-threshold 75 \
       --html-details coverage/index.html \
@@ -45,4 +45,3 @@ cmake --build $bdir || exit $?
 if $do_install; then
   cmake --install $bdir || exit $?
 fi
-
