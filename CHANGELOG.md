@@ -1,3 +1,10 @@
+# [1.0.0-next.22](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.21...v1.0.0-next.22) (2025-12-03)
+
+
+### Features
+
+* Fetch content ([#39](https://github.com/rdkcentral/firebolt-native-transport/issues/39)) ([3d7f3ad](https://github.com/rdkcentral/firebolt-native-transport/commit/3d7f3ad760bce497728fde6dae3bc45ddb53d243))
+
 # [1.0.0-next.21](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.20...v1.0.0-next.21) (2025-11-28)
 
 
