@@ -1,3 +1,10 @@
+# [1.0.0-next.23](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.22...v1.0.0-next.23) (2025-12-05)
+
+
+### Bug Fixes
+
+* Build shared lib ([54832c1](https://github.com/rdkcentral/firebolt-native-transport/commit/54832c1309027c4820656ea7725ca5ceb891c7fa))
+
 # [1.0.0-next.22](https://github.com/rdkcentral/firebolt-native-transport/compare/v1.0.0-next.21...v1.0.0-next.22) (2025-12-03)
 
 
