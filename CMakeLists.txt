@@ -57,6 +57,7 @@ string(REGEX REPLACE "^v?([0-9]+)\\.([0-9]+)\\.([0-9]+).*" "\\3" PROJECT_VERSION
 
 message(STATUS "Project version: ${PROJECT_VERSION}")
 
+option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(ENABLE_TESTS "Build tests" OFF)
 option(DISCOVER_UT "Discover all Unit Tests" ON)
 
